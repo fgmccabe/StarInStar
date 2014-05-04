@@ -1,0 +1,6 @@
+hello is package{
+  main() do {
+    logMsg(info,"hello: $("there") again");
+    emp is {}
+  }
+}

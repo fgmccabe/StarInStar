@@ -1,0 +1,8 @@
+catalog is catalog{
+  content is hash{
+    "location" -> "location.star";
+    "maybe" -> "maybe.star";
+    "binomial" -> "starlib/binomial.star";
+    "redset"-> "starlib/redset.star";
+  }
+}
