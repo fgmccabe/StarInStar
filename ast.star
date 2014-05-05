@@ -27,7 +27,7 @@ ast is package{
 
   unary(Lc,Op,Arg) is oneApply(Lc,asName(Lc,Op),Arg);
 
-  isUnary(asApply(_,asName(Nm),asTuple(_,"()",list of {E})),Nm) is some(E);
+  isUnary(asApply(_,asName(_,Nm),asTuple(_,"()",list of {E})),Nm) is some(E);
   isUnary(_,_) default is none;
 
   oneApply(Lc,Op,Arg) is asApply(Lc,Op,asTuple(Lc,"()",list of {Arg}));
@@ -35,6 +35,9 @@ ast is package{
   bin(Lc,Op,Lhs,Rhs) is binApply(Lc,asName(Lc,Op),Lhs,Rhs);
 
   binApply(Lc,Op,Lhs,Rhs) is asApply(Lc,Op,asTuple(Lc,"()",list of {Lhs;Rhs}));
+
+  isBinary(asApply(_,asName(_,Nm),asTuple(_,"()",list of {L;R})),Nm) is some((L,R));
+  isBinary(_,_) default is none;
 
   nAry(Lc,Op,Args) is asApply(Lc,asName(Lc,Op),asTuple(Lc,"()",Args));
 

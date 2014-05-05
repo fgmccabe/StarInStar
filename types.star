@@ -27,6 +27,7 @@ types is package{
 
   type iConstraint is iContract(iType) or -- contract constraint The type argument includes all affected types
     iFieldCon(iType,string,iType) or -- field constraint. The first argument is the constrained type
+    iFieldKind(iType,string,kKind) or -- type field kind constraint. 
     iTypeCon(iType,string,iType) or -- type field constraint. Existential constraint
     hasKind(iType,kKind) or	    -- has kind constrain
     instanceOf(iType,iType) or	    -- type instanceof constraint

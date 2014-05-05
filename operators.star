@@ -133,7 +133,9 @@ operators is package{
   defineInfix has type (string,integer,integer,integer,integer,operators)=>operators;    
   defineInfix(op, left, priority, right, minPr, ops) is valof {
     var Opers := ops.ops;
-    var Defs := present Opers[op] ? Opers[op] | treemap of {};
+    var Defs := present Opers[op] ? 
+      Opers[op] | 
+      treemap of {};
     Defs[infixOp] := operSpec{
       name = op;
       style = infixOp;
