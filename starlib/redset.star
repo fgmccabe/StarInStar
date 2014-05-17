@@ -12,5 +12,6 @@ redset is package{
     is_empty(S) is isEmpty(S);
   }
 
-  emptySet is E;
+  emptySet has type for all t such that redset of t;
+  emptySet is _nil();
 }

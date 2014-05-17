@@ -73,6 +73,20 @@ parseType is package{
   countTypes(asName(_,"type")) is 1;
   countTypes(asTuple(_,"()",L)) is size(L);
 
+
+-- Use this when ast is properly implemented
+--  isUniv(<|for all ?V such that ?T |>) is some((V,T));
+  private 
+  isUniv(T) where isBinary(T,"such that") matches some((L,R)) and
+  isUnary(L,"for all") matches some(V) is
+    some((deComma(V),R));
+  isUniv(_) default is none;
+
+  private
+  isExists(T) where isBinary(T,"such that") matches some((L,R)) and
+  isUnary(L,"exists") matches some(V) is
+    some((deComma(V),R));
+  isExists(_) default is none;
 }
     
   

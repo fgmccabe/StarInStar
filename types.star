@@ -1,5 +1,6 @@
 types is package{
   private import redset;
+  private import redblack;
 
   -- kind of a type
   type kKind is kType or kUnknown or kTypeFun(integer);
@@ -204,4 +205,11 @@ types is package{
 
   deRef(tV matching iTvar{}) is tV.value=unTyped ? tV | deRef(tV.value);
   deRef(T) default is T;
+
+  stdTypes is redblack of {
+    "integer_" -> iType("integer_");
+    "long_" -> iType("long_");
+    "float_" -> iType("float_");
+    "char_" -> iType("char_");
+  };    
 }

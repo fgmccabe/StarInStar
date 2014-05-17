@@ -2,19 +2,25 @@ redblack is package{
   -- inspired by Chris Okasaki's Purely Functional Data Structures
   -- and by Sedgwick's coursera course
 
+  -- we only export the redblack type
+  type rbtree counts as redblack;
+--  type redblack of (k,v) is alias of rbtree of (k,v);
+
   private type color is red or black;
 
-  type redblack of (k,v) where comparable over k 'n equality over k is 
+  private type rbtree of (k,v) where comparable over k 'n equality over k is 
     E or
     N{
       color has type color;
       sze has type integer;
-      lhs has type redblack of (k,v);
+      lhs has type rbtree of (k,v);
       ky has type k;
       vl has type v;
-      rhs has type redblack of (k,v);
+      rhs has type rbtree of (k,v);
 
       sze default is size(lhs)+size(rhs)+1;
+  --    assert color=red implies (not isRed(lhs) and not isRed(rhs))
+  --    assert blackCount(lhs)=blackCount(rhs)
     };
 
   private 
@@ -41,7 +47,7 @@ redblack is package{
     x=Nd.ky ? some(Nd.vl) |
     none;
 
-  implementation indexable over redblack of (%k,%v) determines (%k,%v) is {
+  implementation indexable over rbtree of (%k,%v) determines (%k,%v) is {
     _index(L,Ky) is rbFind(Ky,L);
     _set_indexed(L,Ix,El) is rbInsert(Ix,El,L);
     _delete_indexed(L,Ix) is rbDelete(L,Ix)
@@ -132,7 +138,7 @@ redblack is package{
     valis (k1,v1,balance(N{color=C;lhs=L;ky=k;vl=v;rhs=R1}))
   };
 
-  implementation sizeable over redblack of (%k,%t) is {
+  implementation sizeable over rbtree of (%k,%t) is {
     size(E) is 0;
     size(N{sze=S}) is S;
 
@@ -140,7 +146,7 @@ redblack is package{
     isEmpty(_) default is false;
   }
 
-  implementation sequence over redblack of (%k,%v) determines ((%k,%v)) is {
+  implementation sequence over rbtree of (%k,%v) determines ((%k,%v)) is {
     _nil() is E;
     _cons((K,V),T) is rbInsert(K,V,T);
     _apnd(T,(K,V)) is rbInsert(K,V,T);
@@ -160,11 +166,11 @@ redblack is package{
   ixNext(NoMore(X),_,_,_,_) is NoMore(X);
   ixNext(St,F,k,v,R) is ixIterate(R,F,F(k,v,St));
 
-  implementation iterable over redblack of (%k,%v) determines %v is {
+  implementation iterable over rbtree of (%k,%v) determines %v is {
     _iterate(M,F,S) is ixIterate(M,fn(iX,iY,St) => F(iY,St),S);
   }
 
-  implementation indexed_iterable over redblack of (%k,%v) determines (%k,%v) is {
+  implementation indexed_iterable over rbtree of (%k,%v) determines (%k,%v) is {
     _ixiterate(M,F,S) is ixIterate(M,F,S);
   }
 
