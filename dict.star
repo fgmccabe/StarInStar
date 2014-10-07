@@ -6,9 +6,15 @@ dict is package{
     algebraic() or
     typeAlias(string,kKind,(iType)=>maybe of iType); -- the alias is actually in the form of a function
 
-  type dictionary is dict{
-    types has type map of (string,typeEntry)
-    outer has type dictionary;
+  type varEntry is varEntry{
+    name has type string;
+    tipe has type iType;
+  }
+
+  type dict is dict{
+    names has type dictionary of (string, varEntry)
+    types has type dictionary of (string, typeEntry)
+    outer has type dict;
   }
   
   findType(dict{types=Tp},Nm) is _index(Tp,Nm);

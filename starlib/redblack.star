@@ -8,7 +8,7 @@ redblack is package{
 
   private type color is red or black;
 
-  private type rbtree of (k,v) where comparable over k 'n equality over k is 
+  private type rbtree of (k,v) where comparable over k and equality over k is 
     E or
     N{
       color has type color;

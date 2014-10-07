@@ -1,0 +1,3 @@
+-- some sample types
+
+for all e,f such that (c of e,(e)=>f) => c of f

@@ -1,6 +1,6 @@
 hex is package{
-  grabHex(sequence of {';';..L},Id,Hx,Cx) is (cons(Hx as char,Id),L,Cx+1);
-  grabHex(sequence of {X;..L},Id,Hx,Cx) where isHexDigit(X) is 
+  grabHex([';',..L],Id,Hx,Cx) is (cons(Hx as char,Id),L,Cx+1);
+  grabHex([X,..L],Id,Hx,Cx) where isHexDigit(X) is 
       grabHex(L,Id,Hx*16+hexDigitVal(X),Cx+1);
   grabHex(L,Id,Hx,Cx) is (cons(Hx as char,Id),L,Cx);
 

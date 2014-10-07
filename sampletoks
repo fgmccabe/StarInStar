@@ -2,7 +2,7 @@
   type token -- A line comment 
   -- A line comment /* with a block comment */ in it
 
-  /* Punctuation: */(())[[]]{{}}#()###=>==>$=>$$;..;+*
+  /* Punctuation: */(())[[]]{{}}#()###=>==>$=>$$;..,,..,<=>+*
   /* Identifiers: */ alpha _omega _0345 one_two \$funny has type
   /* Integers */12 0c0 0x56
   /* Decimal: */123.45a

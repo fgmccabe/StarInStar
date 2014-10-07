@@ -11,12 +11,12 @@ location is package{
     ppDisp=showLoc;
   } using {
     showLoc(someWhere{
-       uri=U;
-       lineCount=Line;
-       lineOffset=Off;
-       length=Ln}) is 
-	ppSequence(0,cons of {ppStr(U.path);ppStr("/");
-	   ppStr(Line as string);ppStr("[");ppStr(Off as string);ppStr(":");ppStr(Ln as string);ppStr("]")});
+      uri=U;
+      lineCount=Line;
+      lineOffset=Off;
+      length=Ln}) is 
+    ppSequence(0,cons of [ppStr(U.path), ppStr("/"),
+	   ppStr(Line as string), ppStr("["), ppStr(Off as string), ppStr(":"), ppStr(Ln as string), ppStr("]")]);
     showLoc(missing) is ppStr("no where");
   };
 

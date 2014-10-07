@@ -3,7 +3,7 @@ stdNames is package{
   -- define the standard graphic identifiers
   type tokGraph is tokGraph{
     isFinal has type boolean;
-    dict has type map of (char,tokGraph)
+    dict has type dictionary of (char,tokGraph)
   };
 
   addStdGrph("") do nothing;
@@ -14,14 +14,14 @@ stdNames is package{
       valis tokGraph{isFinal=F;dict=ND}
     }
     addName(cons(Ch,Rest),tokGraph{isFinal=F;dict=D}) is valof{
-      RD is addName(Rest,tokGraph{isFinal=false;dict=map of {}});
+      RD is addName(Rest,tokGraph{isFinal=false;dict=dictionary of {}});
       valis tokGraph{isFinal=F;dict=_set_indexed(D,Ch,RD)};
     };
   } in { 
     StdNames := addName(explode(Name),StdNames);
   };
   
-  var StdNames := tokGraph{isFinal=false;dict=map of {}};
+  var StdNames := tokGraph{isFinal=false;dict=dictionary of {}};
   
   isLeadInChar(Ch) is present StdNames.dict[Ch];
   

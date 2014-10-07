@@ -4,19 +4,19 @@ errors is package{
 
   private errorActor is actor{
     errors has type ref list of errorMsg;
-    var errors := list of {};
+    var errors := list of [];
 
     on Msg on error do
       extend errors with Msg;
 
     reportAllErrors() do {
       if not isEmpty(errors) then {
-	logMsg(warning,"errors and warnings:");
-	for errorMsg(Msg,Lc) in errors do
-	    logMsg(warning,display(Lc),Msg);
+        logMsg(warning,"errors and warnings:");
+        for errorMsg(Msg,Lc) in errors do
+          logMsg(warning,display(Lc),Msg);
       }
       else
-      logMsg(info,"No errors or warnings");
+        logMsg(info,"No errors or warnings");
     };
   };
 

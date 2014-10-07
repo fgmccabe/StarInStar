@@ -5,5 +5,6 @@ catalog is catalog{
     "binomial" -> "starlib/binomial.star";
     "redset"-> "starlib/redset.star";
     "redblack"-> "starlib/redblack.star";
+    "collections"-> "starlib/collections.star";
   }
 }

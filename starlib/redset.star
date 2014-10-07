@@ -9,7 +9,7 @@ redset is package{
     add_element(S,El) is S[with El->()];
     remove_element(S,El) is S[without El];
     contains_element(S,El) is present S[El];
-    is_empty(S) is isEmpty(S);
+    is_empty(S) is isEmpty(S)
   }
 
   emptySet has type for all t such that redset of t;

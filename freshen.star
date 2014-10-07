@@ -7,50 +7,79 @@ freshen is package{
   frshn(iUniv(bV,bT),M,U,E) is frshn(bT,U(bV,M),U,E);
   frshn(Typ,M,_,_) is let{
     frshnUp(Mp) is let{
-      rewrite(Tp) is case deRef(Tp) in {
-	iTvar{} is Tp;
-	iKvar(_,_) is Tp;
-	iBvar(Nm) is Mp[Nm];
-	iType(_) is Tp;
-	iFace(Flds,Tps) is iFace(rewriteMap(Flds),rewriteMap(Tps));
-	iRecord(Flds,Kds) is kindConstrain(
-	  iFace(rewriteMap(Flds),rewriteKinds(Kds)),Kds);
-	iTuple(Flds) is iTuple(_map(Flds,rewrite));
-	iFnTp(A,R) is iFnTp(rewrite(A),rewrite(R));
-	iPtTp(A,R) is iPtTp(rewrite(A),rewrite(R));
-	iRfTp(T) is iRfTp(rewrite(T));
-	iTpExp(T,A) is iTpExp(rewrite(T),rewrite(A));
-	iUniv(Nm,bTp) is let{
-	  var xF is frshnUp(Mp[without Nm]);
-	} in iUniv(Nm,xF(bTp));
-	iExists(Nm,bTp) is let{
-	  var xF is frshnUp(Mp[without Nm]);
-	} in iExists(Nm,xF(bTp));
-	iConstrained(A,X) is iConstrained(rewrite(A),frshnCon(X));
-	unTyped is unTyped;
+      rewrite(Tp) is case Tp in {
+        iTvar{value=V} is V=unTyped?Tp|rewrite(V);
+      	iKvar(_,_) is Tp;
+      	iBvar(Nm) is Mp[Nm];
+      	iType(_) is Tp;
+      	iFace(Flds,Tps) is iFace(frMap(Flds),frMap(Tps));
+      	iTuple(Flds) is iTuple(map(Flds,rewrite));
+      	iFnTp(A,R) is iFnTp(rewrite(A),rewrite(R));
+      	iPtTp(A,R) is iPtTp(rewrite(A),rewrite(R));
+      	iRfTp(T) is iRfTp(rewrite(T));
+      	iTpExp(T,A) is iTpExp(rewrite(T),rewrite(A));
+      	iUniv(Nm,bTp) is let{
+      	  var xF is frshnUp(Mp[without Nm]);
+      	} in iUniv(Nm,xF(bTp));
+      	iExists(Nm,bTp) is let{
+      	  var xF is frshnUp(Mp[without Nm]);
+      	} in iExists(Nm,xF(bTp));
+      	iConstrained(A,X) is valof{
+          frCon(X);
+          valis rewrite(A)
+      	}
+      	unTyped is unTyped;
       };
 
-      frshnCon(iContract(CTp)) is iContract(rewrite(CTp));
-      frshnCon(iFieldCon(rTp,Nm,fTp)) is iFieldCon(rewrite(rTp),Nm,rewrite(fTp));
-      frshnCon(iTypeCon(rTp,Nm,fTp)) is iTypeCon(rewrite(rTp),Nm,rewrite(fTp));
-      frshnCon(hasKind(rTp,K)) is hasKind(rewrite(rTp),K);
-      frshnCon(instanceOf(rTp,fTp)) is instanceOf(rewrite(rTp),rewrite(fTp));
-      frshnCon(isTuple(rTp)) is isTuple(rewrite(rTp));
+      frCon(iContract(Cx,Ax,Dx)) do {
+      	var nAx is map(Ax,rewrite);
+      	var nI is iContract(Cx,nAx,map(Dx,rewrite));
+      	for A in nAx do
+      	  setConstraint(A,nI)
+      };
+      frCon(iFieldCon(rTp,Nm,fTp)) do{
+      	var nAx is rewrite(rTp);
+      	setConstraint(nAx,iFieldCon(nAx,Nm,rewrite(fTp)))
+      }
+      frCon(iTypeCon(rTp,Nm,fTp)) do {
+      	var nAx is rewrite(rTp);
+      	setConstraint(nAx,iTypeCon(nAx,Nm,rewrite(fTp)));
+      }
+      frCon(hasKind(rTp,K)) do {
+      	var nAx is rewrite(rTp);
+      	setConstraint(nAx,hasKind(nAx,K));
+      }
+      frCon(instanceOf(rTp,fTp)) do{
+      	var nTp is rewrite(rTp);
+      	var xTp is rewrite(fTp);
+      	var nI is instanceOf(nTp,xTp);
+      	setConstraint(nTp,nI);
+      	setConstraint(xTp,nI);
+      }
+      frCon(isTuple(rTp)) do {
+      	var nTp is rewrite(rTp);
+      	setConstraint(nTp,isTuple(nTp));
+      }
 
-      rewriteMap has type (map of (string,iType))=>map of (string,iType);
-      rewriteMap(Flds) is map of {all (K,rewrite(V)) where K->V in Flds};
+      frMap has type (dictionary of (string,iType))=>dictionary of (string,iType);
+      frMap(Flds) is dictionary of {all (K,rewrite(V)) where K->V in Flds};
 
-      rewriteKinds(Kds) is map of {all (T,Mp[T]) where T->_ in Kds};
+      rewriteKinds(Kds) is dictionary of {all (T,Mp[T]) where T->_ in Kds};
 
       kindConstrain(T,KM) is _checkIterState(
-	_ixiterate(KM,
-	    fn (FT,FK,ContinueWith(Tp))=>ContinueWith(
-	    iConstrained(Tp,hasKind(Mp[FT],FK))),
-	    ContinueWith(T)),razer)
+      	_ixiterate(KM,
+          fn (FT,FK,ContinueWith(Tp))=>ContinueWith(
+      	    iConstrained(Tp,hasKind(Mp[FT],FK))),
+    	    ContinueWith(T)),razer)
       razer() is raise "problem";
     } in rewrite;
   } in frshnUp(M)(Typ);
 
+  private
+  setConstraint(T matching iTvar{ con := Cs },Cx) do 
+    T.con := list of [Cx,..Cs];
+  setConstraint(_,_) do nothing;
+  
   private 
   var counter := 0;
   private nextId() is valof{
@@ -63,6 +92,7 @@ freshen is package{
       id = nextId();
       name = Nm;
       value := unTyped;
+      con := [];
     }];
 
   private
@@ -70,12 +100,12 @@ freshen is package{
     valof{
       UVars is list of { all V where (V matching iTvar{}) in Mp }
       if isEmpty(UVars) then
-	valis Mp[with Nm->iKvar(nextId(),Nm)]
+      	valis Mp[with Nm->iKvar(nextId(),Nm)]
       else
-	valis Mp[with Nm->iTpExp(iKvar(nextId(),Nm),
+      	valis Mp[with Nm->iTpExp(iKvar(nextId(),Nm),
 	    iTuple(UVars))]
     }
 
-  freshenForUse(Tp) is frshn(Tp,map of {},nVar,skolemize);
-  freshenForEvidence(Tp) is frshn(Tp,map of {},skolemize,nVar);
+  freshenForUse(Tp) is frshn(Tp,dictionary of {},nVar,skolemize);
+  freshenForEvidence(Tp) is frshn(Tp,dictionary of {},skolemize,nVar);
 }

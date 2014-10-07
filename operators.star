@@ -1,6 +1,5 @@
 operators is package{
   private import treemap;
-  private import maybe;
   import stdNames;
 
   type operatorStyle is prefixOp or infixOp or postfixOp;
@@ -26,48 +25,24 @@ operators is package{
   
   implementation pPrint over operSpec is {
     ppDisp(operSpec{name=N; style=prefixOp; minPriority=minPr; priority=Pr;right=rPr}) is
-	ppSequence(0,cons of { ppStr(Pr=rPr?"\#assocPrefix"|"\#prefix");
-	   ppStr("(");
-	   ppStr(display(N));
-	   ppStr(",");
-	   ppStr(Pr as string);
-	   showMinPr(minPr);
-	   ppStr(")")
-	 });
+      ppSequence(0,cons of [ppStr(Pr=rPr?"\#assocPrefix"|"\#prefix"),
+                      	   ppStr("("),ppStr(display(N)),ppStr(","),ppStr(Pr as string),showMinPr(minPr),ppStr(")")]);
     ppDisp(operSpec{name=N; style=infixOp; minPriority=minPr; left=lPr; priority=Pr;right=rPr}) is
-	ppSequence(0,cons of { ppStr(Pr=rPr?"\#right"| Pr=lPr? "\#left" | "\#infix");
-	   ppStr("(");
-	   ppStr(display(N));
-	   ppStr(",");
-	   ppStr(Pr as string);
-	   showMinPr(minPr);
-	   ppStr(")")
-	 });
+    	ppSequence(0,cons of [ppStr(Pr=rPr?"\#right"| Pr=lPr? "\#left" | "\#infix"),
+                            ppStr("("), ppStr(display(N)), ppStr(","), ppStr(Pr as string), showMinPr(minPr), ppStr(")")]);
     ppDisp(operSpec{name=N; style=postfixOp; minPriority=minPr; left=lPr;priority=Pr}) is
-	ppSequence(0,cons of { ppStr(Pr=lPr?"\#assocPostfix"|"\#postfix");
-	   ppStr("(");
-	   ppStr(display(N));
-	   ppStr(",");
-	   ppStr(Pr as string);
-	   showMinPr(minPr);
-	     ppStr(")")
-	 });
-    private showMinPr(0) is ppSequence(0,cons of {});
-    showMinPr(Pr) is ppSequence(0,cons of {ppStr(",");ppStr(Pr as string) });
+    	ppSequence(0,cons of [ ppStr(Pr=lPr?"\#assocPostfix"|"\#postfix"), ppStr("("), ppStr(display(N)), ppStr(","), ppStr(Pr as string),
+              	   showMinPr(minPr), ppStr(")")]);
+    private showMinPr(0) is ppSequence(0,cons of []);
+    showMinPr(Pr) is ppSequence(0,cons of [ppStr(","), ppStr(Pr as string) ]);
   }
   
   implementation pPrint over bracketSpec is {
     ppDisp(brackets{left=L;right=R;op=Op;seqOp=S;inPrior=I}) is 
-	ppSequence(0,cons of { ppStr("\#pair(");
-	   ppStr(display(L));
-	   ppStr(",");
-	   ppStr(display(R));
-	   ppStr(",");
-	   ppStr(display(Op));
-	   ppStr(",");
-	   ppStr(I as string);
-	   S=""?ppSequence(0,nil)|ppSequence(0,cons of {ppStr(",");ppStr(display(S))});
-	   ppStr(")") })
+          ppSequence(0,cons of [ ppStr("\#pair("), ppStr(display(L)), ppStr(","), ppStr(display(R)), ppStr(","),
+                                  ppStr(display(Op)), ppStr(","), ppStr(I as string),
+                                  S=""?ppSequence(0,nil)|ppSequence(0,cons of [ppStr(","),ppStr(display(S))]),
+                                  ppStr(")") ])
   }
   
   type operators is operators{
@@ -79,17 +54,17 @@ operators is package{
   implementation pPrint over operators is {
     ppDisp(Ops) is ppSequence(2,
 	  interleave(showOperators(Ops.ops)++showBrackets(Ops.brackets),
-	   ppSequence(0,cons of {ppStr(";");ppNl})));
+                ppSequence(0,cons of [ppStr(";"),ppNl])));
   } using {
     showOperators(Ops) is cons of { ppDisp(Op) where AOps in Ops and Op in AOps };
     showBrackets(Bkts) is cons of { ppDisp(Bk) where Bk in Bkts };
   }
   
-  interleave(cons of {H;..T},I) is cons of {H;..nextLeave(T,I)};
-  interleave(cons of {},_) is cons of {};
+  interleave(cons of [H,..T],I) is cons of [H,..nextLeave(T,I)];
+  interleave(cons of [],_) is cons of [];
   
-  private nextLeave(cons of {H;..T},I) is cons of {I;H;..nextLeave(T,I)};
-  nextLeave(cons of {},_) is cons of {};
+  private nextLeave(cons of [H,..T],I) is cons of [I,H,..nextLeave(T,I)];
+  nextLeave(cons of [],_) is cons of [];
   
   private
   checkMultiWord has type (string,treemap of (string,(list of string,string)))=>
@@ -100,10 +75,10 @@ operators is package{
       
       var pair is (pieces,S);
       
-	valis _set_indexed(ops,S,pair)
+      valis _set_indexed(ops,S,pair)
     } else{
       if not isUnicodeIdentifier(S) then
-	addStdGrph(S);
+        addStdGrph(S);
       valis ops;
     }
   }
@@ -201,7 +176,6 @@ operators is package{
     };
 
     opTable := defineRight(";",2000,opTable);
---    opTable := defineRight("| |",2000,opTable);
     opTable := defineNonAssocPostfix(";",2000,opTable);
       
     opTable := defineNonAssocInfix(";..",1999,opTable);
@@ -418,42 +392,42 @@ operators is package{
     valis opTable; 
   }
 
-  isPrefixOp has type (string,operators,integer) => maybe of operSpec;
+  isPrefixOp has type (string,operators,integer) => option of operSpec;
   isPrefixOp(Nm,Ops,Pr) where Nm->Specs in Ops.ops and present Specs[prefixOp] is valof{
     prOp is Specs[prefixOp];
     if prOp.minPriority<=Pr then
-      valis Just(prOp)
+      valis some(prOp)
     else
-      valis noWay;
+      valis none;
   }
-  isPrefixOp(Nm,Ops,Pr) default is noWay;
+  isPrefixOp(Nm,Ops,Pr) default is none;
     
   isInfixOp(Nm,Ops,Pr) where Nm->Specs in Ops.ops and present Specs[infixOp] is valof{
     opSpec is Specs[infixOp];
     if opSpec.minPriority<=Pr then
-      valis Just(opSpec)
+      valis some(opSpec)
     else
-      valis noWay;
+      valis none;
   }
-  isInfixOp(Nm,Ops,Pr) default is noWay;
+  isInfixOp(Nm,Ops,Pr) default is none;
     
   isPostfixOp(Nm,Ops,Pr) where Nm->Specs in Ops.ops and present Specs[postfixOp] is valof{
     opSpec is Specs[postfixOp];
     if opSpec.minPriority<=Pr then
-      valis Just(opSpec)
+      valis some(opSpec)
     else
-      valis noWay;
+      valis none;
   }
-  isPostfixOp(Nm,Ops,Pr) default is noWay;
+  isPostfixOp(Nm,Ops,Pr) default is none;
     
-  isLeftBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].left=B is Just(ops.brackets[B]);
-  isLeftBracket(_,_) default is noWay;
+  isLeftBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].left=B is some(ops.brackets[B]);
+  isLeftBracket(_,_) default is none;
     
-  isRightBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].right=B is Just(ops.brackets[B]);
-  isRightBracket(_,_) default is noWay;
+  isRightBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].right=B is some(ops.brackets[B]);
+  isRightBracket(_,_) default is none;
 
-  isBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].op=B is Just(ops.brackets[B]);
-  isBracket(_,_) default is noWay;
+  isBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].op=B is some(ops.brackets[B]);
+  isBracket(_,_) default is none;
 
   isOperator(Nm,Ops,Pr) where present Ops.ops[Nm] is valof{
     for Spec in Ops.ops[Nm] do {
