@@ -1,4 +1,4 @@
- /* A comment */
+/* A comment */
   type token -- A line comment 
   -- A line comment /* with a block comment */ in it
 
@@ -9,7 +9,7 @@
   /* Floats: */123.45 12.34e10 345.12e-10
   /* Longs: */123l 23L 0x45l
   /* Characters: */'a' 'b' '\n' '@' '\u34;' 
-  /* Strings: */"a simple string" "a string with a \n in it" 0'6"a blob"stri\+56;ng""A doll\$r"
+  /* Strings: */"a simple string" "a string with a \n and \u1f601;X \u21; in it" """a blob"stri\u56;ng""""A doll\$r"
   /* Interpolated */"A $var string" "an $(expression([5])+34) string" "A string with $( a "string") in it"
   /* Some special symbols */ 'n 's
   /* Regular expressions */ `a.*` `a([a-z]+:A)b`

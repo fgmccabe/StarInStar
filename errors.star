@@ -24,7 +24,7 @@ errors is package{
     request errorActor's reportAllErrors to reportAllErrors();
 
   reportError(Msg,Locs) do {
-    logMsg(info,"Error: $Msg at $Locs");
+    logMsg(info,"Error: #Msg at $Locs");
     notify errorActor with errorMsg(Msg,Locs) on error;
   }
 

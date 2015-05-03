@@ -1,5 +1,5 @@
 operators is package{
-  private import treemap;
+  private import trie;
   import stdNames;
 
   type operatorStyle is prefixOp or infixOp or postfixOp;
@@ -46,9 +46,9 @@ operators is package{
   }
   
   type operators is operators{
-    ops has type treemap of (string, treemap of (operatorStyle,operSpec));
-    multiops has type treemap of (string, (list of string,string));
-    brackets has type treemap of (string, bracketSpec);
+    ops has type dictionary of (string, dictionary of (operatorStyle,operSpec));
+    multiops has type trie of (string, string);
+    brackets has type dictionary of (string, bracketSpec);
   };
   
   implementation pPrint over operators is {
@@ -67,26 +67,30 @@ operators is package{
   nextLeave(cons of [],_) is cons of [];
   
   private
-  checkMultiWord has type (string,treemap of (string,(list of string,string)))=>
-      treemap of (string,(list of string,string));
+  checkMultiWord has type (string,trie of (string,string))=>trie of (string,string)
   checkMultiWord(S,ops) is valof {
     if findstring(S," ",0)>=0 then {
       var pieces is splitString(S," ");
-      
-      var pair is (pieces,S);
-      
-      valis _set_indexed(ops,S,pair)
+      valis addToTrie(pieces,S,ops)
     } else{
       if not isUnicodeIdentifier(S) then
         addStdGrph(S);
-      valis ops;
+      valis addToTrie(list of [S],S,ops);
     }
+  }
+
+  private splitOp has type (string)=>list of string;
+  splitOp(S) is valof{
+    if findstring(S," ",0)>=0 then
+      valis splitString(S," ")
+    else
+      valis list of [S];
   }
     
   definePrefix has type (string,integer,integer,integer,operators)=>operators;
   definePrefix(op, priority, right, minPr, ops) is valof {
     var Opers := ops.ops;
-    var Defs := present Opers[op] ? Opers[op] | treemap of {};
+    var Defs := Opers[op] has value Dict ? Dict | dictionary of [];
     Defs[prefixOp] := operSpec{
       name = op;
       style = prefixOp;
@@ -108,9 +112,7 @@ operators is package{
   defineInfix has type (string,integer,integer,integer,integer,operators)=>operators;    
   defineInfix(op, left, priority, right, minPr, ops) is valof {
     var Opers := ops.ops;
-    var Defs := present Opers[op] ? 
-      Opers[op] | 
-      treemap of {};
+    var Defs :=  Opers[op] has value Def ? Def | dictionary of {};
     Defs[infixOp] := operSpec{
       name = op;
       style = infixOp;
@@ -136,7 +138,7 @@ operators is package{
   definePostfix has type (string,integer,integer,integer,operators)=>operators;
   definePostfix(op, left, priority, minPr, ops) is valof {
     var Opers := ops.ops;
-    var Defs := present Opers[op] ? Opers[op] | treemap of {};
+    var Defs :=  Opers[op] has value Def ? Def | dictionary of {};
     Defs[postfixOp] := operSpec{
       name = op;
       style = prefixOp;
@@ -170,16 +172,16 @@ operators is package{
 
   standardOps is valof{
     var opTable := operators{
-      ops = treemap of {};
-      multiops = treemap of {};
-      brackets = treemap of {};
+      ops = dictionary of [];
+      multiops = emptyTrie;
+      brackets = dictionary of [];
     };
 
     opTable := defineRight(";",2000,opTable);
     opTable := defineNonAssocPostfix(";",2000,opTable);
       
-    opTable := defineNonAssocInfix(";..",1999,opTable);
-    opTable := defineNonAssocInfix("..;",1998,opTable);
+    opTable := defineNonAssocInfix(",..",1099,opTable);
+    opTable := defineNonAssocInfix("..,",1098,opTable);
       
     opTable := defineNonAssocPrefix("\#",1350,opTable);
 
@@ -318,6 +320,7 @@ operators is package{
     opTable := defineNonAssocInfix("substitute",900,opTable);
     opTable := defineNonAssocInfix("matches",900,opTable);
     opTable := defineRight("over",900,opTable);
+    opTable := defineNonAssocInfix("has value",900,opTable);
 
     opTable := defineNonAssocPostfix("is tuple",900,opTable);
 
@@ -393,8 +396,7 @@ operators is package{
   }
 
   isPrefixOp has type (string,operators,integer) => option of operSpec;
-  isPrefixOp(Nm,Ops,Pr) where Nm->Specs in Ops.ops and present Specs[prefixOp] is valof{
-    prOp is Specs[prefixOp];
+  isPrefixOp(Nm,Ops,Pr) where Ops.ops[Nm] has value Specs and Specs[prefixOp] has value prOp is valof{
     if prOp.minPriority<=Pr then
       valis some(prOp)
     else
@@ -402,8 +404,7 @@ operators is package{
   }
   isPrefixOp(Nm,Ops,Pr) default is none;
     
-  isInfixOp(Nm,Ops,Pr) where Nm->Specs in Ops.ops and present Specs[infixOp] is valof{
-    opSpec is Specs[infixOp];
+  isInfixOp(Nm,Ops,Pr) where Ops.ops[Nm] has value Specs and Specs[infixOp] has value opSpec is valof{
     if opSpec.minPriority<=Pr then
       valis some(opSpec)
     else
@@ -411,8 +412,7 @@ operators is package{
   }
   isInfixOp(Nm,Ops,Pr) default is none;
     
-  isPostfixOp(Nm,Ops,Pr) where Nm->Specs in Ops.ops and present Specs[postfixOp] is valof{
-    opSpec is Specs[postfixOp];
+  isPostfixOp(Nm,Ops,Pr) where Ops.ops[Nm] matches Specs and Specs[postfixOp] has value opSpec is valof{
     if opSpec.minPriority<=Pr then
       valis some(opSpec)
     else
@@ -420,17 +420,17 @@ operators is package{
   }
   isPostfixOp(Nm,Ops,Pr) default is none;
     
-  isLeftBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].left=B is some(ops.brackets[B]);
+  isLeftBracket(B,ops) where ops.brackets[B] has value opBrackets and opBrackets.left=B is some(opBrackets);
   isLeftBracket(_,_) default is none;
     
-  isRightBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].right=B is some(ops.brackets[B]);
+  isRightBracket(B,ops) where ops.brackets[B] has value opBrackets and opBrackets.right=B is some(opBrackets);
   isRightBracket(_,_) default is none;
 
-  isBracket(B,ops) where present ops.brackets[B] and ops.brackets[B].op=B is some(ops.brackets[B]);
+  isBracket(B,ops) where ops.brackets[B] has value opBrackets and opBrackets.op=B is some(opBrackets)
   isBracket(_,_) default is none;
 
-  isOperator(Nm,Ops,Pr) where present Ops.ops[Nm] is valof{
-    for Spec in Ops.ops[Nm] do {
+  isOperator(Nm,Ops,Pr) where Ops.ops[Nm] has value opSpecs is valof{
+    for Spec in opSpecs do {
       if Spec.minPriority<=Pr then
 	valis true;
     };

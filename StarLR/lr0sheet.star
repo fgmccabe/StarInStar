@@ -14,18 +14,18 @@ worksheet{
    * B -> 1
    */
 
-  eRules0 is list of {
-    rule{ruleNo = 0; nt = "<start>"; rhs = list of {"E";"<eof>"}};
-    rule{ruleNo = 1; nt = "E"; rhs = list of {"E"; "*"; "B"}};
-    rule{ruleNo = 2; nt = "E"; rhs = list of {"E"; "+"; "B"}};
-    rule{ruleNo = 3; nt = "E"; rhs = list of {"B"}};
-    rule{ruleNo = 4; nt = "B"; rhs = list of {"0"}};
-    rule{ruleNo = 5; nt = "B"; rhs = list of {"1"}};
-  };
+  eRules0 is list of [
+    rule{ruleNo = 0; nt = "<start>"; rhs = list of ["E","<eof>"]},
+    rule{ruleNo = 1; nt = "E"; rhs = list of ["E", "*", "B"]},
+    rule{ruleNo = 2; nt = "E"; rhs = list of ["E", "+", "B"]},
+    rule{ruleNo = 3; nt = "E"; rhs = list of ["B"]},
+    rule{ruleNo = 4; nt = "B"; rhs = list of ["0"]},
+    rule{ruleNo = 5; nt = "B"; rhs = list of ["1"]}
+  ];
 
   (a0,g0) is table(lr0states(eRules0,"E"),eRules0);
 
-  tokens0 is list of {"1"; "+"; "1"; "<eof>"};
+  tokens0 is list of ["1", "+", "1", "<eof>"];
   show driver(a0,g0)(tokens0);
 
   -- try the glr driver too
@@ -39,11 +39,11 @@ worksheet{
    * E -> 1
    */
 
-  eRules1 is list of {
-    rule{ruleNo=0; nt = "<start>"; rhs = list of {"E";"<eof>"}};
-    rule{ruleNo=1; nt = "E"; rhs = list of {"1";"E"}};
-    rule{ruleNo=2; nt = "E"; rhs = list of {"1"}};
-  };
+  eRules1 is list of [
+    rule{ruleNo=0; nt = "<start>"; rhs = list of ["E","<eof>"]},
+    rule{ruleNo=1; nt = "E"; rhs = list of ["1","E"]},
+    rule{ruleNo=2; nt = "E"; rhs = list of ["1"]}
+  ];
 
   show table(lr0states(eRules1,"E"),eRules1);
 
@@ -55,13 +55,13 @@ worksheet{
    * B -> 1
    */
 
-  eRules2 is list of {
-    rule{ruleNo=0; nt = "<start>"; rhs = list of {"E";"<eof>"}};
-    rule{ruleNo=1; nt = "E"; rhs = list of {"A";"1"}};
-    rule{ruleNo=2; nt = "E"; rhs = list of {"B";"2"}};
-    rule{ruleNo=3; nt = "A"; rhs = list of {"1"}};
-    rule{ruleNo=4; nt = "B"; rhs = list of {"1"}};
-  };
+  eRules2 is list of [
+    rule{ruleNo=0; nt = "<start>"; rhs = list of ["E","<eof>"]},
+    rule{ruleNo=1; nt = "E"; rhs = list of ["A","1"]},
+    rule{ruleNo=2; nt = "E"; rhs = list of ["B","2"]},
+    rule{ruleNo=3; nt = "A"; rhs = list of ["1"]},
+    rule{ruleNo=4; nt = "B"; rhs = list of ["1"]}
+  ];
 
   show table(lr0states(eRules2,"E"),eRules2);
 

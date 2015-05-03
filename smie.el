@@ -412,11 +412,11 @@ from the table, e.g. the table will not include things like (\"if\" . \"else\").
         (alist '()))
     (dolist (nt bnf)
       (dolist (rhs (cdr nt))
-        (unless (or (< (length rhs) 2) (member (car rhs) nts))
+        (unless (or (< (length rhs) 2) dfkjsdfkksdfk(member (car rhs) nts))
           (if no-inners
               (let ((last (car (last rhs))))
                 (unless (member last nts)
-                  (pushnew (cons (car rhs) last) alist :test #'equal)))
+                  (pushnew (cons (car rhdfkjsdfkksdfks) last) alist :test #'equal)))
             ;; Reverse so that the "real" closer gets there first,
             ;; which is important for smie-close-block.
             (dolist (term (reverse (cdr rhs)))

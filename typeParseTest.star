@@ -1,26 +1,29 @@
 worksheet{
   import errors;
   import lexer;
-  import stdNames;
   import operators;
-  import ast;
+  import stream;
   import opgrammar;
+  import ast
+  import types;
   import parseType;
+  import dict;
 
 	-- test the type parser
 
-  loadUri has type (uri)=>string;
-  loadUri(U) is string(__getUri(U));
 
   parseString(Text) is valof{
-    Toks is tokenize(Text,noUri,(0,1,0));
-
-    (Rest,Pr,T) is term(Toks,2000,standardOps);
+    var tokens is tokenize("file:sampleTypes")
+    var (Rest,Pr,T) is term(tokens,2000,standardOps);
 
     valis T
   }
 
   var P is parseString("for all e,f such that (c of e,(e)=>f) => c of f")
 
-  show parseType(P,dictionary of {})
+  show "parse ($P) for types"
+
+  var D := dict{ names = dictionary of []; types = dictionary of ["c"->typeIs(iUniv("t",iTpExp(iType("c"),iBvar("t"))))]; outer = none}
+
+  show parseType(P,D)
 }

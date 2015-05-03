@@ -1,4 +1,4 @@
-catalog is catalog{
+catalog{
   content is hash{
     "location" -> "location.star";
     "maybe" -> "maybe.star";
@@ -6,5 +6,7 @@ catalog is catalog{
     "redset"-> "starlib/redset.star";
     "redblack"-> "starlib/redblack.star";
     "collections"-> "starlib/collections.star";
+    "trie"-> "starlib/trie.star";
+    "leftRight"-> "starlib/leftRight.star";
   }
 }

@@ -10,10 +10,10 @@ freshen is package{
       rewrite(Tp) is case Tp in {
         iTvar{value=V} is V=unTyped?Tp|rewrite(V);
       	iKvar(_,_) is Tp;
-      	iBvar(Nm) is Mp[Nm];
+      	iBvar(Nm) where Mp[Nm] has value Kt is Kt;
       	iType(_) is Tp;
       	iFace(Flds,Tps) is iFace(frMap(Flds),frMap(Tps));
-      	iTuple(Flds) is iTuple(map(Flds,rewrite));
+      	iTuple(Flds) is iTuple(map(rewrite,Flds));
       	iFnTp(A,R) is iFnTp(rewrite(A),rewrite(R));
       	iPtTp(A,R) is iPtTp(rewrite(A),rewrite(R));
       	iRfTp(T) is iRfTp(rewrite(T));
@@ -32,8 +32,8 @@ freshen is package{
       };
 
       frCon(iContract(Cx,Ax,Dx)) do {
-      	var nAx is map(Ax,rewrite);
-      	var nI is iContract(Cx,nAx,map(Dx,rewrite));
+      	var nAx is map(rewrite,Ax);
+      	var nI is iContract(Cx,nAx,map(rewrite,Dx));
       	for A in nAx do
       	  setConstraint(A,nI)
       };
@@ -64,20 +64,20 @@ freshen is package{
       frMap has type (dictionary of (string,iType))=>dictionary of (string,iType);
       frMap(Flds) is dictionary of {all (K,rewrite(V)) where K->V in Flds};
 
-      rewriteKinds(Kds) is dictionary of {all (T,Mp[T]) where T->_ in Kds};
+      rewriteKinds(Kds) is dictionary of {all (T,someValue(Mp[T])) where T->_ in Kds};
 
       kindConstrain(T,KM) is _checkIterState(
       	_ixiterate(KM,
           fn (FT,FK,ContinueWith(Tp))=>ContinueWith(
-      	    iConstrained(Tp,hasKind(Mp[FT],FK))),
+      	    iConstrained(Tp,hasKind(someValue(Mp[FT]),FK))),
     	    ContinueWith(T)),razer)
       razer() is raise "problem";
     } in rewrite;
   } in frshnUp(M)(Typ);
 
   private
-  setConstraint(T matching iTvar{ con := Cs },Cx) do 
-    T.con := list of [Cx,..Cs];
+  setConstraint(T matching iTvar{ constraints := Cs },Cx) do 
+    T.constraints := list of [Cx,..Cs];
   setConstraint(_,_) do nothing;
   
   private 
@@ -92,7 +92,7 @@ freshen is package{
       id = nextId();
       name = Nm;
       value := unTyped;
-      con := [];
+      constraints := [];
     }];
 
   private
@@ -102,10 +102,9 @@ freshen is package{
       if isEmpty(UVars) then
       	valis Mp[with Nm->iKvar(nextId(),Nm)]
       else
-      	valis Mp[with Nm->iTpExp(iKvar(nextId(),Nm),
-	    iTuple(UVars))]
+      	valis Mp[with Nm->iTpExp(iKvar(nextId(),Nm),iTuple(UVars))]
     }
 
-  freshenForUse(Tp) is frshn(Tp,dictionary of {},nVar,skolemize);
-  freshenForEvidence(Tp) is frshn(Tp,dictionary of {},skolemize,nVar);
+  freshenForUse(Tp) is frshn(Tp,dictionary of [],nVar,skolemize);
+  freshenForEvidence(Tp) is frshn(Tp,dictionary of [],skolemize,nVar);
 }

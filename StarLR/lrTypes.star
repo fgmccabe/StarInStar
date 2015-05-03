@@ -10,10 +10,10 @@ lrTtypes is package{
 
   implementation pPrint over item is {
     ppDisp(item{ruleNo=n;nt=N;prefix=P;suffix=S}) is ppSequence(0,
-	cons of { ppStr(n as string);ppStr(" : ");ppStr(N);ppStr("->");
-	  showItems(P); ppStr("."); showItems(S);ppStr("\n") });
+      	cons of [ppStr(n as string), ppStr(" : "), ppStr(N), ppStr("->"),
+            	  showItems(P), ppStr("."), showItems(S), ppNl ]);
     private showItems(L) is ppSequence(0,
-	cons of { all ppStr(X) where X in L});
+        	cons of { all ppStr(X) where X in L});
   }
 
   type tokenPriority is tA or lA(integer) or rA(integer) or nA(integer);

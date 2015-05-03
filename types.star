@@ -9,7 +9,7 @@ types is package{
     id has type integer;		-- use integers to identify vars
     name has type string;		-- original name
     value has type ref iType;
-    con has type ref list of iConstraint; -- constraints
+    constraints has type ref list of iConstraint; -- constraints
   } or
     iKvar(integer,string) or				  -- skolem constant
     iBvar(string) or					  -- bound var
@@ -75,9 +75,6 @@ types is package{
   showType(iRfTp(R),Pr) is parenthesize(
     ppSequence(0,cons of [ppStr("ref "), showType(R,900)]),
     Pr<900);
-  showType(iTpExp(L,iTuple([A])),Pr) is parenthesize(
-    ppSequence(0,cons of [showType(L,839), ppStr(" of "), showType(A,839)]),
-      Pr<840);
   showType(iTpExp(L,R),Pr) is parenthesize(
     ppSequence(0,cons of [showType(L,839), ppStr(" of "), showType(R,839)]),
       Pr<840);
@@ -107,7 +104,7 @@ types is package{
     ppSequence(0,cons of [showConstrained(iConstrained(T,C)),
       ppSpace, ppStr("and"), ppSpace, showConstraint(C1)]);
   showConstrained(iConstrained(T,C)) is 
-    ppSequence(0,cons of [showType(T,939), ppStr("where"), showConstraint(C)]);
+    ppSequence(0,cons of [showType(T,939), ppSpace, ppStr("where"), ppSpace, showConstraint(C)]);
 
   parenthesize(E,false) is E;
   parenthesize(E,true) is ppSequence(0,cons of {ppStr("("); E; ppStr(")")});

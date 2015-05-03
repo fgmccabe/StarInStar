@@ -1,5 +1,4 @@
 fsa is package{
-  private import maybe;
   private import multiTree;
 
   /*
@@ -15,10 +14,10 @@ fsa is package{
       or starFSA(fsa of (alpha,final))
       or plusFSA(fsa of (alpha,final))
       or optFSA(fsa of (alpha,final))
-      or charSet(cons of alpha)
-      or nonCharSet(cons of alpha)
+      or charSet(list of alpha)
+      or nonCharSet(list of alpha)
       or anyChar
-      or bindVar(fsa of (alpha,final),(cons of alpha,final)=>final)
+      or bindVar(fsa of (alpha,final),(list of alpha,final)=>final)
       or endFSA(fsa of (alpha,final), state of final);
   
   type state of alpha is

@@ -9,8 +9,8 @@ stdNames is package{
   addStdGrph("") do nothing;
   addStdGrph(Name) do let{
     addName(nil,tokGraph{dict=D}) is tokGraph{isFinal=true;dict=D};
-    addName(cons(Ch,Rest),tokGraph{isFinal=F;dict=D}) where present D[Ch] is valof{
-      ND is _set_indexed(D,Ch,addName(Rest,D[Ch]));
+    addName(cons(Ch,Rest),tokGraph{isFinal=F;dict=D}) where D[Ch] has value Ex is valof{
+      ND is _set_indexed(D,Ch,addName(Rest,Ex));
       valis tokGraph{isFinal=F;dict=ND}
     }
     addName(cons(Ch,Rest),tokGraph{isFinal=F;dict=D}) is valof{
@@ -33,7 +33,7 @@ stdNames is package{
   isTermChar has type (char,tokGraph)=>boolean;
   isTermChar(Ch,M) is M.isFinal;
   nextCharMap has type (char,tokGraph)=>tokGraph;
-  nextCharMap(Ch,M) is M.dict[Ch];
+  nextCharMap(Ch,M) where M.dict[Ch] has value nxt is nxt;
   
   isValidNextChar has type (char,tokGraph)=>boolean;
   isValidNextChar(Ch,M) is present M.dict[Ch];
