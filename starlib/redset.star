@@ -6,12 +6,12 @@ redset is package{
   type redset of t is alias of redblack of (t,());
 
   implementation collections over redblack of (%t,()) determines %t is {
-    add_element(S,El) is S[with El->()];
-    remove_element(S,El) is S[without El];
-    contains_element(S,El) is present S[El];
-    is_empty(S) is isEmpty(S)
+    fun add_element(S,El) is S[with El->()]
+    fun remove_element(S,El) is S[without El]
+    fun contains_element(S,El) is present S[El]
+    fun is_empty(S) is isEmpty(S)
   }
 
   emptySet has type for all t such that redset of t;
-  emptySet is _nil();
+  def emptySet is _nil();
 }

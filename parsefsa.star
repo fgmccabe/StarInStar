@@ -13,6 +13,7 @@ parsefsa is package{
         | [^chars]    -- negative selection of characters
         | "echar*"    -- literal string
         | (regexp)    -- parenthesising
+        | (regexp:Id) -- variable binding
         | regexp|regexp   -- disjunction
         | regexp regexp   -- concatenation of two regexps
         | regexp *
@@ -38,34 +39,36 @@ parsefsa is package{
        | char    -- other chars are quoted
   */
 
-private parseRegexp(text) is let{
-    parseRE(Src) is parseSingle(Src,parseMore)
+private fun parseRegexp(text) is let{
+    fun parseRE(Src) is parseSingle(Src,parseMore)
 
-    parseSingle(['[','^',..T],Cx) is parseCharSet(T,[],fn(Chs,xT)=>Cx(xT,nonCharSet(Chs)))
-    parseSingle(['[',..T],Cx) is parseCharSet(T,[],fn(Chs,xT)=>Cx(xT,charSet(Chs)))
-    parseSingle(['.',..T],Cx) is Cx(T,anyChar)
-    parseSingle(['(',..T],Cx) is parseSingle(T,fn(Ti,soFar)=>parseMore(Ti,soFar,fn(['\)',..Tx],final)=>Cx(Tx,final)))
-    parseSingle([Ch,..T],Cx) is Cx(T,oneChar(Ch))
+    fun parseSingle(['[','^',..T],Cx) is parseCharSet(T,[],(Chs,xT)=>Cx(xT,nonCharSet(Chs)))
+     |  parseSingle(['[',..T],Cx) is parseCharSet(T,[],(Chs,xT)=>Cx(xT,charSet(Chs)))
+     |  parseSingle(['.',..T],Cx) is Cx(T,anyChar)
+     |  parseSingle(['(',..T],Cx) is parseSingle(T,(Ti,soFar)=>parseMore(Ti,soFar,(['\)',..Tx],final)=>Cx(Tx,final)))
+     |  parseSingle([Ch,..T],Cx) is Cx(T,oneChar(Ch))
 
-    parseMore([],soFar,Cx) => Cx([],soFar)
-    parseMore(['\)',..T],soFar,Cx) => Cx(['\)',..T],soFar)
-    parseMore(['*',..T],soFar,Cx) => parseMore(T,starFSA(soFar),Cx)
-    parseMore(['+',..T],soFar,Cx) => parseMore(T,plusFSA(soFar),Cx)
-    parseMore(['?',..T],soFar,Cx) => parseMore(T,optFSA(soFar),Cx)
-    parseMore(['|',..T],soFar,Cx) => parseSingle(T,fn(xT,R)=>parseMore(xT,orS(soFar,R),Cx))
-    parseMore([':',..T],soFar,Cx) => parseId(T,fn(xT,Id)=>parseMore(xT,bindVar(soFar,bind(Id)),Cx))
+    fun parseBinding([':',..T],Cx) is parseId(T,(xT,Id)=>parseParen(xT,())
 
-    parseCharSet([']',..T],Chars,Cont) is Cont(Chars,T)
-    parseCharSet([X,'-',Y,..T],Chars,Cont) is parseCharSet(T,addToChars(X,Y,Chars),Cont)
-    parseCharSet([X,..T],Chars,Cont) is parseCharSet(T,addChar(X,Chars),Cont)
+    fun parseMore([],soFar,Cx) => Cx([],soFar)
+     |  parseMore(['\)',..T],soFar,Cx) => Cx(['\)',..T],soFar)
+     |  parseMore(['*',..T],soFar,Cx) => parseMore(T,starFSA(soFar),Cx)
+     |  parseMore(['+',..T],soFar,Cx) => parseMore(T,plusFSA(soFar),Cx)
+     |  parseMore(['?',..T],soFar,Cx) => parseMore(T,optFSA(soFar),Cx)
+     |  parseMore(['|',..T],soFar,Cx) => parseSingle(T,(xT,R)=>parseMore(xT,orS(soFar,R),Cx))
+     |  parseMore([':',..T],soFar,Cx) => parseId(T,(xT,Id)=>parseMore(xT,bindVar(soFar,bind(Id)),Cx))
 
-    parseId([C,..R],Cont) where isIdentifierStart(C) is parseMoreId(R,[C],Cont)
+    fun parseCharSet([']',..T],Chars,Cont) is Cont(Chars,T)
+     |  parseCharSet([X,'-',Y,..T],Chars,Cont) is parseCharSet(T,addToChars(X,Y,Chars),Cont)
+     |  parseCharSet([X,..T],Chars,Cont) is parseCharSet(T,addChar(X,Chars),Cont)
 
-    parseMoreId([C,..R],soFar,Cont) where isIdentifierChar(C) is parseMoreId(R,[C,..soFar],Cont)
-    parseMoreId(T,soFar,Cont) is Cont(T,revImplode(soFar))
+    fun parseId([C,..R],Cont) where isIdentifierStart(C) is parseMoreId(R,[C],Cont)
+
+    fun parseMoreId([C,..R],soFar,Cont) where isIdentifierChar(C) is parseMoreId(R,[C,..soFar],Cont)
+     |  parseMoreId(T,soFar,Cont) is Cont(T,revImplode(soFar))
   }
 
-  private isIdentifierStart(char(C)) is __isIdentifierStart(C);
-  private isIdentifierChar(char(C)) is __isIdentifierPart(C);
+  private fun isIdentifierStart(char(C)) is __isIdentifierStart(C);
+  private fun isIdentifierChar(char(C)) is __isIdentifierPart(C);
 
   }

@@ -5,9 +5,9 @@ stream is package{
 
   type streemList of t is endStreem or streem(streem of ((t,streemList of t)));
 
-  force(endStreem,_) do nothing
-  force(streem(M),Ops) do{
-    var (_,S) is M(Ops);
-    force(S,Ops);
-  }
+  prc force(endStreem,_) do nothing
+   |  force(streem(M),Ops) do{
+	    def (_,S) is M(Ops);
+	    force(S,Ops);
+	  }
 }

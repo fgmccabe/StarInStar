@@ -1,5 +1,5 @@
 fsa is package{
-  private import multiTree;
+  private import multiTree
 
   /*
    * Finite state automaton. Closely allied to regular expressions of course.
@@ -18,27 +18,25 @@ fsa is package{
       or nonCharSet(list of alpha)
       or anyChar
       or bindVar(fsa of (alpha,final),(list of alpha,final)=>final)
-      or endFSA(fsa of (alpha,final), state of final);
+      or endFSA(fsa of (alpha,final), state of final)
   
   type state of alpha is
       state(string)
       or final(alpha)
-      or switch(string,integer);
+      or switch(string,integer)
   
   -- Some standard combinators
   
-  oneSym(S) is let{
-    stateTrans(sequence of {A;..R},SoFar,St) where S(A) is list of {(list of {SoFar..;A},R);..St};
-    stateTrans(_,_,St) default is St;
-  } in stateTrans;
+  fun oneSym(S) is let{
+    fun stateTrans([A,..R],SoFar,St) where S(A) is list of [(list of [SoFar..,A],R),..St]
+     |  stateTrans(_,_,St) default is St
+  } in stateTrans
   
-  emptyFSA() is let{
-    trans(R,SoFar,St) is list of { (SoFar,R);..St }
-  } in trans;
+  fun emptyFSA() is let{
+    trans(R,SoFar,St) is list of [(SoFar,R),..St]
+  } in trans
   
-  bind(F) is let{
-    trans(S,SoFar,State) is F(S,list of {},list of {})++State;
-  } in trans;
+  fun bind(F) is let{
+    trans(S,SoFar,State) is F(S,list of [],list of [])++State
+  } in trans
 }	
-
-

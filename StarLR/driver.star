@@ -3,15 +3,15 @@ driver is package{
 
   -- implement a parser that handles the tables generated.
 
-  driver(actions,goto) is let {
-    parser(tokens) is valof{
+  fun driver(actions,goto) is let {
+    fun parser(tokens) is valof{
       var stk := cons of [0];
       var state := 0;
       var output := cons of [];
       var Toks := tokens;
 
       while Toks matches list of [Tk,..Rest] do {
-    		pA is actions[state][Tk];
+    		def pA is actions[state][Tk];
 
     		if isEmpty(pA) then{
     		  logMsg(info,"error state: $state:$Tk");
@@ -20,20 +20,20 @@ driver is package{
     		  if size(pA)>1 then
     		    logMsg(info,"multiple actions: $pA in $state:$Tk");
 
-    		  case (pA[0]) in {
-    		    shiftTo(Sno) do {
+    		  switch (pA[0]) in {
+    		    case shiftTo(Sno) do {
     		      logMsg(info,"shift on $Tk to $Sno");
     		      stk := [Sno,..stk];
     		      state := Sno;
     		      Toks := Rest;
     		    }
-    		    reduceBy(Nt,Rno,Cnt) do {
+    		    case reduceBy(Nt,Rno,Cnt) do {
     		      stk := drop(stk,Cnt);
     		      state := goto[stk[0]][Nt];
     		      stk := [state,..stk];
     		      logMsg(info,"reduce $Nt by $Rno -> $state");
     		    }
-    		    accept(Rno) do {
+    		    case accept(Rno) do {
     		      logMsg(info,"accept state by $Rno");
     		      valis some(stk);
     		    }
@@ -44,18 +44,18 @@ driver is package{
     };
   } in parser;
 
-  private drop(L,Cnt) is L[Cnt:];
+  private fun drop(L,Cnt) is L[Cnt:];
 
-  glrDriver(actions,goto) is let{
+  fun glrDriver(actions,goto) is let{
 
-    reduceState(Stk,Cnt,Nt) is valof{
+    fun reduceState(Stk,Cnt,Nt) is valof{
       logMsg(info,"reducing $Stk by $Cnt");
       
-      nStk is Stk[Cnt:];
+      def nStk is Stk[Cnt:];
       valis cons of [goto[nStk[0]][Nt],..nStk]
     }
 
-    parser(tokens) is valof{
+    fun parser(tokens) is valof{
       var stacks := cons of [cons of [0]];
 
       for Tk in tokens do {
@@ -67,20 +67,20 @@ driver is package{
       	};
 
       	while not isEmpty(pathQ) do {
-      	  (Nt,Rno,Cnt,Stk) is qHead(pathQ);
+      	  def (Nt,Rno,Cnt,Stk) is qHead(pathQ);
       	  logMsg(info,"reducing $Nt using $Rno");
       	  pathQ := qTail(pathQ);
       	  logMsg(info,"pathQ now $pathQ");
 
-      	  rStk is reduceState(Stk,Cnt,Nt);
+      	  def rStk is reduceState(Stk,Cnt,Nt);
 
       	  logMsg(info,"rStk is $rStk");
 
       	  for A in actions[rStk[0]][Tk] do{
-      	    case A in {
-      	      reduceBy(xNt,xRno,xCnt) do 
+      	    switch A in {
+      	      case reduceBy(xNt,xRno,xCnt) do 
             		pathQ := [pathQ..,(xNt,xRno,xCnt,rStk)];
-      	      _ default do
+      	      case _ default do
             		stacks := [rStk,..stacks]
       	    }
       	  }
@@ -90,16 +90,16 @@ driver is package{
       	var nStks := cons of [];
       	for stk in stacks do {
       	  for A in actions[stk[0]][Tk] do {
-      	    case A in {
-      	      shiftTo(Sno) do {
+      	    switch A in {
+      	      case shiftTo(Sno) do {
             		logMsg(info,"shift on $Tk to $Sno");
             		nStks := [[Sno,..stk],..nStks];
       	      }
-      	      accept(Rno) do {
+      	      case accept(Rno) do {
             		logMsg(info,"accept state by $Rno");
             		valis some(stk)
       	      }
-      	      _ default do nothing;
+      	      case _ default do nothing;
       	    }
       	  }
       	}

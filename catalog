@@ -8,5 +8,27 @@ catalog{
     "collections"-> "starlib/collections.star";
     "trie"-> "starlib/trie.star";
     "leftRight"-> "starlib/leftRight.star";
+    "ast" -> "ast.star";
+    "dict" -> "dict.star";
+    "errors" -> "errors.star";
+    "freshen" -> "freshen.star";
+    "fsa" -> "fsa.star";
+    "good" -> "good.star";
+    "hex" -> "hex.star";
+    "lexer" -> "lexer.star";
+    "operators" -> "operators.star";
+    "opgrammar" -> "opgrammar.star";
+    "parsefsa" -> "parsefsa.star";
+    "parseType" -> "parseType.star";
+    "stream" -> "stream.star";
+    "stdNames" -> "stdNames.star";
+    "stream" -> "stream.star";
+    "subsume" -> "subsume.star";
+    "types" -> "types.star";
+    "typeUtils" -> "typeUtils.star";
+    "dependencies" -> "dependencies.star";
+    "contracts" -> "contracts.star";
+    "astUtils" -> "astUtils.star";
+    "topsort" -> "topsort.star";
   }
 }

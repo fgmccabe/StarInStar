@@ -1,3 +1,3 @@
 nogood is package{
-  type good of (T) is good(T) or noGood(string)
+  type good of (T,E) is good(T) or noGood(E)
 }

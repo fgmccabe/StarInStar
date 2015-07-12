@@ -1,4 +1,0 @@
-  /* Strings: */"a simple string" "a string with a \n in it" """a blob"stri\+56;ng""A doll\$r"""
-  /* Interpolated */"A $var string" "an $(expression([5])+34) string" "A string with $( a "string") in it"
-  /* Format Interpolated */"A$fmtVar:09;string" "an $(expression([5])+34):XX; string" "$VV"
-  

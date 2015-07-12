@@ -1,9 +1,9 @@
 bintest is package{
   import binomial;
 
-  main() do {
-    SS is binomial of {"alpha"; "gamma"; "beta"; "delta"; "omega"; "iota"};
-    TT is binomial of {"eta"; "omega"};
+  prc main() do {
+    def SS is binomial of ["alpha", "gamma", "beta", "delta", "omega", "iota"];
+    def TT is binomial of ["eta", "omega"];
 
     logMsg(info,"SS=$SS");
     logMsg(info,"SS++TT=$(SS++TT)");
