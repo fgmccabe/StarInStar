@@ -1,0 +1,5 @@
+-- some sample types
+
+for all e,f such that (c of e,(e)=>f) => c of f
+
+for all r,n such that (r)=>n where r implements { name has type n}

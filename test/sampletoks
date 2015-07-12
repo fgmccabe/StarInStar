@@ -1,0 +1,16 @@
+/* A comment */
+  type token -- A line comment 
+  -- A line comment /* with a block comment */ in it
+
+  /* Punctuation: */(())[[]]{{}}#()###=>==>$=>$$;..,,..,<=>+*
+  /* Identifiers: */ alpha _omega _0345 one_two \$funny has type
+  /* Integers */12 0c0 0x56
+  /* Decimal: */123.45a
+  /* Floats: */123.45 12.34e10 345.12e-10
+  /* Longs: */123l 23L 0x45l
+  /* Characters: */'a' 'b' '\n' '@' '\u34;' 
+  /* Strings: */"a simple string" "a string with a \n and \u1f601;X \u21; in it" """a blob"stri\u56;ng""""A doll\$r"
+  /* Interpolated */"A $var string" "an $(expression([5])+34) string" "A string with $( a "string") in it" "nested $("interpolation $X")"
+  /* Some special symbols */ 'n 's
+  /* Regular expressions */ `a.*` `a([a-z]+:A)b`
+  

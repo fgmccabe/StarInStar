@@ -1,0 +1,5 @@
+testInnerOper is package {
+  #infix("foo",34);
+
+  var X = A foo B
+}

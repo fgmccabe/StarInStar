@@ -1,0 +1,7 @@
+hello is package{
+  prc main() do {
+    logMsg(info,"hello: $("there") again");
+    logMsg(info,"hello: there again");
+    def emp is {}
+  }
+}

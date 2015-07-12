@@ -1,0 +1,23 @@
+catalog{
+  content is hash{
+    "ast" -> "../ast.star";
+    "canonical"-> "../canonical.star";
+    "dict"-> "../dict.star";
+    "errors" -> "../errors.star";
+    "freshen"-> "../freshen.star";
+    "lexer" -> "../lexer.star";
+    "operators"-> "../operators.star";
+    "opgrammar"-> "../opgrammar.star";
+    "parseType"-> "../parseType.star";
+    "stream"-> "../stream.star";
+    "types"-> "../types.star";
+    "redblack" -> "../starlib/redblack.star";
+    "binomial" -> "../starlib/binomial.star";
+    "pairHeap" -> "../starlib/pairHeap.star";
+    "collections" -> "../starlib/collections.star";
+    "check" -> "../check.star";
+    "topsort" -> "../topsort.star";
+    "dependencies" -> "../dependencies.star";
+
+  }
+}
