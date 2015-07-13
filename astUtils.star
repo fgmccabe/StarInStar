@@ -43,12 +43,12 @@ astUtils is package{
 
   ptn isKindAnnotation(Lc,Lhs,Tp) from asApply(Lc,asName(_,"has kind"),asTuple(_,"()",[Lhs,Tp]))
 
-  ptn isDefaultField(Lc,Lhs,Exp) from asApply(Lc,asName(_,"is"),
-                                        asTuple(_,"()",[asApply(_,asName(_,"default"),asTuple(_,"()",[Lhs])),
-                                                        Exp]))
-   |  isDefaultField(Lc,Lhs,Exp) from asApply(Lc,asName(_,":="),
-                                        asTuple(_,"()",[asApply(_,asName(_,"default"),asTuple(_,"()",[Lhs])),
-                                                        Exp]))
+  ptn isDefault(Lc,Trm) from asApply(Lc,asName(_,"default"),asTuple(_,"()",[Trm]))
+
+  ptn isDefaultField(Lc,Lhs,Exp) from asApply(Lc,asName(_,"is"),asTuple(_,"()",[isDefault(_,Lhs),Exp]))
+   |  isDefaultField(Lc,Lhs,Exp) from asApply(Lc,asName(_,":="),asTuple(_,"()",[isDefault(_,Lhs),Exp]))
+
+  ptn isDefaultFun(Lc,Fun) from isFunDef(Lc,Fun) where Fun matches isEquation(_,isDefault(_,_),_)
                               
   ptn isIden(Lc,Nm) from asName(Lc,Nm)
    |  isIden(Lc,Nm) from asTuple(Lc,"()",list of [asName(_,Nm)])

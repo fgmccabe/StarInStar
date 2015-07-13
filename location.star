@@ -21,4 +21,7 @@ location is package{
   fun mergeLocation(someWhere{lineCount=Lc1;lineOffset=LO1;charCount=CC1;length=LN1},
     	someWhere{charCount=CC2;length=LN2}) is
           someWhere{lineCount=Lc1;lineOffset=LO1;charCount=CC1;length=CC2+LN2-CC1}
+
+  fun sameLine(someWhere{lineCount=Lc1},someWhere{lineCount=Lc2}) is Lc1=Lc2
+   |  sameLine(_,_) default is false
 }

@@ -10,6 +10,7 @@ check is package{
   private import parseType
   private import freshen
   private import typeUtils
+  private import dependencies
 
   type errorMsg is alias of (string,srcLoc)
 
@@ -208,7 +209,9 @@ check is package{
                                             or El matches isAssignment(_,_,_)
                                             or El matches isTypeAssignment(_,_,_)))
 
-  fun thetaContents(Lc,A,E,D) is 
+  fun thetaContents(Lc,A,E,D) is let{
+    def groups is dependencies(A)
+  }
 
   fun verifyType(Lc,aTp,eTp,D,O,Succ) is valof {
     switch subsume(D)(eTp,aTp) in {

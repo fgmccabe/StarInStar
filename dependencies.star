@@ -70,7 +70,8 @@ dependencies is package{
 
   private
   fun analyseAnnotation(isTypeAnnotation(_,_,Tp),Refs,All,Excl) is findRefs(Tp,tipe,All,Refs,Excl)
-   |  analyseAnnotation(isDefaultField(_,_,Exp),Refs,All,Excl) is valof{logMsg(info,"default exp $Exp"); valis findRefs(Exp,expsion,All,Refs,Excl)}
+   |  analyseAnnotation(isDefaultField(_,_,Exp),Refs,All,Excl) is findRefs(Exp,expsion,All,Refs,Excl)
+   |  analyseAnnotation(isDefaultFun(_,Eqn),Refs,All,Excl) is analyseEquation(Eqn,Refs,All,Excl)
    |  analyseAnnotation(Trm,Refs,_,_) default is Refs
 
 

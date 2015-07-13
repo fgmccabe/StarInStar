@@ -85,8 +85,8 @@ opgrammar is package{
     case interpolatedString(Els,Lc) is (Rest,0,parseInterpolation(Els,Lc,Ops))
     case regexpTok(Str,Lc) is (Rest,0,unary(Lc,"*regexp*",asString(Lc,Str)))
     case _ default is valof{
-      def (RToks,T0) is term00(Toks,Ops)
-      valis termArgs(RToks,T0,Ops)
+      def (RToks,T0,lLc) is term00(Toks,Ops)
+      valis termArgs(RToks,T0,Ops,lLc)
     }
   }
 
@@ -104,18 +104,19 @@ opgrammar is package{
   fun term00(Tks,Ops) where nxtTok(Tks,Ops) matches (idTok(Id,Lc),Toks) is switch Id in {
         case "\#(" is valof{
           def (RToks,_,T) is term(Toks,2000,Ops)
-          if nxtTok(RToks,Ops) matches (idTok(")\#",_),RToks2) then
-            valis (RToks2,T)
+          if nxtTok(RToks,Ops) matches (idTok(")\#",lLc),RToks2) then
+            valis (RToks2,T,lLc)
           else{
-            reportError("expecting a \")\#\", opening \"\#(\" at $Lc",list of [Lc,peekLoc(RToks,Ops)])
-            valis (RToks,T)
+            def lLc is peekLoc(RToks,Ops)
+            reportError("expecting a \")\#\", opening \"\#(\" at $Lc",list of [Lc,lLc])
+            valis (RToks,T,lLc)
           }
         };
         case "\(" is parseParens(Lc,Toks,Ops)
         case "\{" is parseBraces(Lc,Toks,Ops)
         case Nm default is 
-          isLeftBracket(Nm,Ops) matches some(BkSpec) ? parseBrackets(Lc,Toks,Ops,BkSpec) :
-          (Toks,asName(Lc,Nm))
+          isLeftBracket(Nm,Ops) has value BkSpec ? 
+              parseBrackets(Lc,Toks,Ops,BkSpec) : (Toks,asName(Lc,Nm),Lc)
       }
    |  term00(Tks,Ops) where nxtTok(Tks,Ops) matches (Tk,Toks) is valof{
         reportError("expecting an identifier, not $Tk",list of [tokenLoc(Tk)])
@@ -319,16 +320,17 @@ opgrammar is package{
    |  checkForOperators(T,Ops) default is Ops
 
   fun parseParens(stLc,Tks,Ops) where nxtTok(Tks,Ops) matches (idTok("\)",xLc),Toks)  is 
-        (Toks,tple(mergeLocation(stLc,xLc),list of []))
+        (Toks,tple(mergeLocation(stLc,xLc),list of []),xLc)
    |  parseParens(stLc,Tokens,Ops) is let{
         fun parseParen(Toks) is valof{
           def (TToks,_,T) is term(Toks,1200,Ops)
 
           switch nxtTok(TToks,Ops) in {
-            case (idTok(")",tlLc),RToks) do valis (RToks,tple(mergeLocation(stLc,tlLc),tupleize(T)));
+            case (idTok(")",tlLc),RToks) do valis (RToks,tple(mergeLocation(stLc,tlLc),tupleize(T)),tlLc);
             case (HdTk,RToks) default do {
-              reportError("expecting a closing paren, not $HdTk",list of [tokenLoc(HdTk)])
-              valis (RToks,tple(mergeLocation(stLc,tokenLoc(HdTk)),tupleize(T)))
+              def tlLc is tokenLoc(HdTk)
+              reportError("expecting a closing paren, not $HdTk",list of [tlLc])
+              valis (RToks,tple(mergeLocation(stLc,tokenLoc(HdTk)),tupleize(T)),tlLc)
             }
           }
         }
@@ -339,20 +341,20 @@ opgrammar is package{
       } in parseParen(Tokens)
 
   fun parseBraces(stLc,Toks,Ops) where nxtTok(Toks,Ops) matches (idTok("}",xLc),Tokens) is 
-          (Tokens,asName(mergeLocation(stLc,xLc),"{}"))
+          (Tokens,asName(mergeLocation(stLc,xLc),"{}"),xLc)
    |  parseBraces(stLc,Tokens,Operators) is let{
         fun parseBrace(Toks,Els,Ops) is valof{
           def (RToks,_,T) is term(Toks,1999,Ops)
           def Ops1 is checkForOperators(T,Ops)
 
           switch nxtTok(RToks,Ops1) in {
-            case (idTok("\}",tlLc),TToks) do valis (TToks,block(mergeLocation(stLc,tlLc),list of [Els..,T]));
+            case (idTok("\}",tlLc),TToks) do valis (TToks,block(mergeLocation(stLc,tlLc),list of [Els..,T]),tlLc);
             case (idTok(";",_),TToks) do 
               if nxtTok(TToks,Ops1) matches (idTok("\}",tlLc),rstToks) then
-                valis (rstToks,block(mergeLocation(stLc,tlLc),list of [Els..,T]))
+                valis (rstToks,block(mergeLocation(stLc,tlLc),list of [Els..,T]),tlLc)
               else
                 valis parseBrace(TToks,list of [Els..,T],Ops1);
-            case (terminal,_) do valis (RToks,block(mergeLocation(stLc,locOf(T)),list of [Els..,T]))
+            case (terminal,_) do valis (RToks,block(mergeLocation(stLc,locOf(T)),list of [Els..,T]),locOf(T))
             case _ default do {
               valis parseBrace(RToks,list of [Els..,T],Ops1)
             }
@@ -361,7 +363,7 @@ opgrammar is package{
       } in parseBrace(Tokens,list of [],Operators)
 
   fun parseBrackets(stLc,Tks,Ops,Bkt) where nxtTok(Tks,Ops) matches (idTok(Rgt,xLc),Toks) and Rgt=Bkt.right is
-        (Toks,asTuple(mergeLocation(stLc,xLc),Bkt.op,list of []))
+        (Toks,asTuple(mergeLocation(stLc,xLc),Bkt.op,list of []),xLc)
    |  parseBrackets(stLc,Tokens,Ops,Bkt) is let{
         def Rgt is Bkt.right
         def Priority is Bkt.inPrior
@@ -371,7 +373,7 @@ opgrammar is package{
 
           switch nxtTok(RToks,Ops) in {
             case (idTok(R,tlLc),TToks) where R=Rgt do valis 
-                  (TToks,asTuple(mergeLocation(stLc,tlLc),Bkt.op,list of [Els..,T]));
+                  (TToks,asTuple(mergeLocation(stLc,tlLc),Bkt.op,list of [Els..,T]),tlLc);
             case (idTok(",",_),TToks) do valis parseBkt(TToks,list of [Els..,T]);
             case (HdTk,TToks) default do {
               reportError("expecting a ',' or '$Rgt', not $HdTk, '(' at $stLc",list of [tokenLoc(HdTk)])
@@ -381,21 +383,21 @@ opgrammar is package{
         }
       } in parseBkt(Tokens,list of [])
 
-  fun termArgs(Tokens,Lhs,Ops) where nxtTok(Tokens,Ops) matches (Tk,Tks) is switch Tk in {
-    case idTok("(",Lc) is valof{ -- special handling needed for parens
-      def (Toks,ArgsTuple) is parseParens(Lc,Tks,Ops)
+  fun termArgs(Tokens,Lhs,Ops,lLc) where nxtTok(Tokens,Ops) matches (Tk,Tks) is switch Tk in {
+    case idTok("(",Lc) where sameLine(Lc,lLc) is valof{ -- special handling needed for parens
+      def (Toks,ArgsTuple,tlLc) is parseParens(Lc,Tks,Ops)
       valis termArgs(Toks,asApply(mergeLocation(locOf(Lhs),locOf(ArgsTuple)),
-       Lhs,ArgsTuple),Ops)
+       Lhs,ArgsTuple),Ops,tlLc)
     }
-    case idTok("{",Lc) is valof{ -- special handling needed for braces
-      def (Toks,ArgsTuple) is parseBraces(Lc,Tks,Ops)
+    case idTok("{",Lc) where sameLine(Lc,lLc) is valof{ -- special handling needed for braces
+      def (Toks,ArgsTuple,tlLc) is parseBraces(Lc,Tks,Ops)
       valis termArgs(Toks,asApply(mergeLocation(locOf(Lhs),locOf(ArgsTuple)),
-       Lhs,ArgsTuple),Ops)
+       Lhs,ArgsTuple),Ops,tlLc)
     }
-    case idTok(B,Lc) where isLeftBracket(B,Ops) matches some(BkSpec) is valof{
-      def (Toks,ArgsTuple) is parseBrackets(Lc,Tks,Ops,BkSpec)
+    case idTok(B,Lc) where sameLine(Lc,lLc) and isLeftBracket(B,Ops) matches some(BkSpec) is valof{
+      def (Toks,ArgsTuple,tlLc) is parseBrackets(Lc,Tks,Ops,BkSpec)
       valis termArgs(Toks,asApply(mergeLocation(locOf(Lhs),locOf(ArgsTuple)),
-       Lhs,ArgsTuple),Ops)
+       Lhs,ArgsTuple),Ops,tlLc)
     }
     case _ default is (Tokens,0,Lhs)
   }

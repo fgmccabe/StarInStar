@@ -1,7 +1,6 @@
 worksheet{
   import dependencies
   import parseForTest
-  import dict
 
   def F is parseString("fun f(0) is 1 | f(N) where N>0 is g(N-1)*N")
   def G is parseString("fun g(0) is 1 | g(N) where N>0 is f(N-1)*N")
@@ -31,6 +30,20 @@ worksheet{
 
   def NN is parseString("fun now() is 34")
   def MM is parseString("type p is p{dob has type integer; dob default is now()}")
+  def DB is parseString("def dob is now()")
 
-  show dependencies(list of [MM,NN])
+  def DD is dependencies(list of [MM,DB,NN])
+
+  assert size(DD)=3
+
+  show DD
+
+  -- A test with default function
+
+  def O1 is parseString("type p is p{age has type ()=>integer; fun age() default is now()-dob; dob has type integer}")
+  def OD is dependencies(list of [NN,O1,DB])
+
+  show OD
+
+  assert size(OD)=3
 }
