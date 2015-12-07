@@ -1,0 +1,920 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"gr",
+				"groupType"
+			],
+			[
+				"chec",
+				"checkGroup"
+			],
+			[
+				"co",
+				"config"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "dependencies.star",
+			"settings":
+			{
+				"buffer_size": 6910,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "topsort.star",
+			"settings":
+			{
+				"buffer_size": 2515,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "astUtils.star",
+			"settings":
+			{
+				"buffer_size": 6946,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "check.star",
+			"settings":
+			{
+				"buffer_size": 19357,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "types.star",
+			"settings":
+			{
+				"buffer_size": 8569,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "nogood is package{\n\n  type good of (T,E) is good(T) or noGood(E)\n\n  implementation for all T,E such that pPrint over good of (T,E) where pPrint over T and pPrint over E is {\n    ppDisp=showGood\n  } using {\n    fun showGood(good(G)) is ppSequence(0,[ppStr(\"good\"),ppSpace,ppDisp(G)])\n     |  showGood(noGood(N)) is ppSequence(0,[ppStr(\"noGood\"),ppSpace,ppDisp(N)])\n  }\n}",
+			"file": "good.star",
+			"file_size": 368,
+			"file_write_time": 130819322360000000,
+			"settings":
+			{
+				"buffer_size": 369,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "test/checkTest.star",
+			"settings":
+			{
+				"buffer_size": 876,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "freshen.star",
+			"settings":
+			{
+				"buffer_size": 4057,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "test/typeParseTest.star",
+			"settings":
+			{
+				"buffer_size": 1021,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "dict.star",
+			"settings":
+			{
+				"buffer_size": 3229,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "contracts.star",
+			"settings":
+			{
+				"buffer_size": 489,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+					""
+				],
+				[
+					"Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+					"JSON"
+				],
+				[
+					"Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+					"Property List"
+				],
+				[
+					"Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+					"YAML (Block Style)"
+				],
+				[
+					"Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+					"YAML (Default Style)"
+				]
+			],
+			[
+				"Packages/AAAPackageDev/Support/Convert to ....sublime-build",
+				"YAML (Default Style)"
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 347.0,
+		"last_filter": "con",
+		"selected_items":
+		[
+			[
+				"con",
+				"Build With: Convert to ... - Property List"
+			],
+			[
+				"In",
+				"Package Control: Install Package"
+			],
+			[
+				"",
+				"Set Syntax: AppleScript"
+			]
+		],
+		"width": 584.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/fgm/Projects/StarInStar",
+		"/Users/fgm/Projects/StarInStar/starlib",
+		"/Users/fgm/Projects/StarInStar/test"
+	],
+	"file_history":
+	[
+		"/Users/fgm/Projects/StarInStar/typeUtils.star",
+		"/Users/fgm/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/fgm/Library/Application Support/Sublime Text 3/Packages/User/Package Control.sublime-settings",
+		"/Users/fgm/Projects/StarInStar/dependencies.star",
+		"/Users/fgm/Projects/StarInStar/astUtils.star",
+		"/Users/fgm/Library/Application Support/Sublime Text 3/Packages/Package Control/Package Control.sublime-settings",
+		"/Users/fgm/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/Users/fgm/Projects/StarInStar/ast.star",
+		"/Users/fgm/Library/Application Support/Sublime Text 3/Packages/User/Sublime Settings.sublime-settings",
+		"/Users/fgm/Desktop/star.YAML-tmLanguage",
+		"/Users/fgm/Projects/StarInStar/check.star",
+		"/Users/fgm/Projects/StarInStar/canonical.star",
+		"/Users/fgm/Projects/StarInStar/operators.star",
+		"/Users/fgm/Projects/StarInStar/test/catalog",
+		"/Users/fgm/Projects/StarInStar/test/checkTest.star",
+		"/Users/fgm/Projects/StarInStar/test/dependencyTest.star",
+		"/Users/fgm/Projects/StarInStar/starlib/binomial.star",
+		"/Users/fgm/Projects/StarInStar/topsort.star",
+		"/Users/fgm/Projects/StarInStar/starlib/redset.star",
+		"/Users/fgm/Projects/StarInStar/test/topologicalTest.star",
+		"/Users/fgm/Projects/StarInStar/catalog",
+		"/Users/fgm/Projects/StarInStar/starlib/collections.star",
+		"/Users/fgm/Projects/StarInStar/good.star",
+		"/Users/fgm/Projects/StarInStar/subsume.star",
+		"/Users/fgm/Projects/StarInStar/location.star",
+		"/Users/fgm/Projects/StarInStar/opgrammar.star",
+		"/Users/fgm/Projects/StarInStar/parseType.star",
+		"/Users/fgm/Projects/StarInStar/contracts.star",
+		"/Users/fgm/Projects/StarInStar/test/typeParseTest.star",
+		"/Users/fgm/Projects/StarInStar/test/parseForTest.star",
+		"/Users/fgm/Projects/StarInStar/stdNames.star",
+		"/Users/fgm/Projects/StarInStar/fsa.star",
+		"/Users/fgm/Projects/StarInStar/parsefsa.star",
+		"/Users/fgm/Projects/StarInStar/test/freshenTest.star",
+		"/Users/fgm/Projects/StarInStar/test/fact.star",
+		"/Users/fgm/Projects/StarInStar/test/redblacktest.star",
+		"/Users/fgm/Projects/StarInStar/test/bintest.star",
+		"/Users/fgm/Projects/StarInStar/lexer.star",
+		"/Users/fgm/Projects/StarInStar/main.star",
+		"/Users/fgm/Projects/StarInStar/test/testPairHeap.star",
+		"/Users/fgm/Projects/StarInStar/test/sampleTerm",
+		"/Users/fgm/Projects/StarInStar/test/lexerTest.star",
+		"/Users/fgm/Projects/StarInStar/test/grammarTest.star",
+		"/Users/fgm/Projects/StarInStar/starlib/trie.star",
+		"/Users/fgm/Projects/StarInStar/starlib/redblack.star",
+		"/Users/fgm/Projects/StarInStar/starlib/pairHeap.star",
+		"/Users/fgm/Projects/StarInStar/types.star",
+		"/Users/fgm/Projects/StarInStar/stream.star",
+		"/Users/fgm/Projects/StarInStar/starlib/leftRight.star",
+		"/Users/fgm/Projects/StarInStar/starlib/multiTree.star",
+		"/Users/fgm/Projects/StarInStar/StarLR/driver.star",
+		"/Users/fgm/Projects/StarInStar/dict.star",
+		"/Users/fgm/Projects/StarInStar/freshen.star",
+		"/Users/fgm/Projects/StarInStar/hex.star",
+		"/Users/fgm/Projects/StarInStar/errors.star",
+		"/Users/fgm/Projects/StarInStar/starlib/testPairHeap.star",
+		"/Users/fgm/Projects/StarInStar/starlib/genes.star",
+		"/Users/fgm/Projects/StarInStar/smie.el",
+		"/Users/fgm/Sites/Images/testImages/llist",
+		"/Users/fgm/Projects/StarInStar/test/sampleTypes",
+		"/Users/fgm/Projects/StarInStar/test/sampletoks",
+		"/Users/fgm/Projects/StarInStar/test/testInnerOper",
+		"/Users/fgm/Projects/StarInStar/sampleTypes",
+		"/Users/fgm/Projects/StarInStar/freshenTest.star",
+		"/Users/fgm/Projects/StarInStar/typeParseTest.star",
+		"/Users/fgm/Projects/StarInStar/StarLR/nullable.star",
+		"/Users/fgm/Projects/StarInStar/sampleTerm",
+		"/Users/fgm/Projects/StarInStar/grammarTest.star",
+		"/Users/fgm/Projects/StarInStar/README.md",
+		"/Users/fgm/Projects/StarInStar/stringToks",
+		"/Users/fgm/Projects/StarInStar/sampletoks",
+		"/Users/fgm/Projects/StarInStar/lexerTest.star",
+		"/Users/fgm/Downloads/multy-user.svg",
+		"/Users/fgm/Downloads/multy-user.pdf",
+		"/Users/fgm/Projects/Nano/JSON-Parsing-Animals-Init.playground/Resources/animals.json",
+		"/Users/fgm/Downloads/indexableTree.star",
+		"/Users/fgm/Desktop/Star Programmer/modular.html",
+		"/Users/fgm/Desktop/Star Programmer/dsl.html",
+		"/Users/fgm/Projects/InStart/SDWebImage/SDWebImage.podspec",
+		"/Users/fgm/Projects/StarRulesRef/reference.pdf",
+		"/Users/fgm/Desktop/Star Programmer/tour.html",
+		"/Applications/Charles.app/Contents/Info.plist",
+		"/Users/fgm/Downloads/test262-master/test/harness/arrayContains.js",
+		"/Users/fgm/Downloads/test262-master/test/harness/framework.js",
+		"/Users/fgm/Downloads/test262-master/test/harness/math_isequal.js",
+		"/Users/fgm/Downloads/test262-master/test/harness/math_precision.js",
+		"/Users/fgm/Downloads/test262-master/test/harness/testBuiltInObject.js",
+		"/Users/fgm/Downloads/test262-master/test/harness/testIntl.js",
+		"/Users/fgm/Downloads/test262-master/test/harness/$FAIL.js",
+		"/Users/fgm/Library/Containers/com.apple.mail/Data/Library/Mail Downloads/164D5E93-6A45-46E3-B901-4327F53C428E/index.html",
+		"/Applications/Sublime Text.app/Contents/MacOS/changelog.txt"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			"/Users/fgm/Projects/StarInStar",
+			"/Users/fgm/Projects/StarInStar/",
+			"/Users/fgm/Projects/StarInStar/*.star",
+			"/Users/fgm/Projects/StarInStar",
+			"<open folders>/*.star",
+			"<open folders>",
+			"/Users/fgm/Projects/StarRulesRef/*.star",
+			"/Users/fgm/Projects/StarRulesRef",
+			"/Users/fgm/Projects/StarRulesRef/*.tex",
+			"/Users/fgm/Projects/StarRulesRef",
+			"/Users/fgm/Downloads/test262-master/test/harness",
+			"/Users/fgm/Projects/InStart/kido/service/contentOpts/js/tests"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"thetaContents",
+			"astGroup",
+			"\\b-?\\d+(\\.\\d+([eE][-+]?\\d+)?)?[la]?\\b",
+			" ",
+			"\\\\spce\\{\\}",
+			"$",
+			"&",
+			"\\\\\\\\$",
+			"\\tt ",
+			"pttrn",
+			"other",
+			"progCat",
+			"typeOfLet",
+			"thetaContents",
+			"typeOfLet",
+			"typeOfNotEquals",
+			")->",
+			"condPlugins",
+			"ptnPlugins",
+			"typeOfRecord",
+			"isRecord",
+			"noGood",
+			"progDef",
+			"typeOfVar",
+			"typeOfPtnVar",
+			"thetaContents",
+			"typeOfAnnotated",
+			"typeOfReferencePtn",
+			"patrn",
+			"typeOfS",
+			"verifyType",
+			"pttrn",
+			"collections",
+			"\"type\"",
+			"thetaContents",
+			"typeOfVar",
+			"typeOfLet",
+			"expPlugins",
+			"parseBrackets",
+			"parseBraces",
+			"parseParens",
+			"termArgs",
+			"parseBrackets",
+			"parseParens",
+			"term00",
+			"termArgs",
+			"thetaContents",
+			"analyseFunDefn",
+			"\"default\"",
+			"isFunDef",
+			"isDefaultField",
+			"\\\\n",
+			"analyseTypeDefn",
+			"astFold",
+			"has type",
+			"definedFunName",
+			"setOfGood",
+			"analyseFunDefn",
+			"setOfGood",
+			"definedDefNames",
+			"implementation",
+			"contract",
+			"astFold",
+			"foldL",
+			"findConstructorRefs",
+			"typeName",
+			"definedTypeName",
+			"\"prc\"",
+			"done",
+			"analyseDef",
+			"done",
+			"push",
+			".def",
+			"definitions",
+			"defines",
+			"typeOfRecord",
+			"isThetaRecord",
+			"isLetRecord",
+			"AsName",
+			"typeOfNotEquals",
+			"subsume",
+			"typeOfField",
+			"canon",
+			"cano",
+			"lvalueType",
+			"typeOfVar",
+			"subsume",
+			"alltt",
+			"fn(",
+			"definePrefix",
+			"\\(infix (\".*\") (.*)\\)",
+			"\\(nonpost (\".*\") (.*)\\)",
+			"\\(nonpre (\".*\") (.*)\\)",
+			"\\(postfix (\".*\") (.*)\\)",
+			"\\(prefix (\".*\") (.*)\\)",
+			"\\(right (\".*\") (.*)\\)",
+			"\\(left (\".*\") (.*)\\)",
+			"\\(right (\".*\") (.*)\\)",
+			"of {",
+			"{}",
+			"case.*in",
+			"case",
+			"\\bcase\\b",
+			"fn",
+			"removeMinTree",
+			"list of",
+			"var (.*) is",
+			"rbtree",
+			"locOf",
+			"var (.*) is",
+			"\\?",
+			";$",
+			"var (.*) is",
+			";$",
+			"var (.*) is",
+			";$",
+			"var",
+			";$",
+			"\"?\"",
+			";$",
+			"good of",
+			"iTvar",
+			"isUnary",
+			"compUtils",
+			"decimalTok",
+			"mergeConstraints",
+			"subContract",
+			"checkContract"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"\\\\ ",
+			"\\ ",
+			" ",
+			"|",
+			"",
+			", ",
+			"patn",
+			"\\n",
+			".df",
+			"asName",
+			"expr",
+			"(",
+			"    opTable := defineNonAssocInfix(\\1,\\2,opTable)",
+			"    opTable := defineNonAssocPostfix(\\1,\\2,opTable)",
+			"    opTable := defineNonAssocPrefix(\\1,\\2,opTable)",
+			"    opTable := definePrefix(\\1,\\2,opTable)",
+			"    opTable := defineRight(\\1,\\2,opTable)",
+			"    opTable := defineLeft(\\1,\\2,opTable)",
+			"    opTable := defineRight(\\1,\\2,opTable)",
+			"def \\1 is",
+			"redblack",
+			"tkLoc",
+			"def \\1 is",
+			"",
+			"def \\1 is",
+			"",
+			"def \\1 is",
+			"",
+			"has value \\1",
+			"parseTp",
+			"BndVars",
+			"Dct",
+			"noGood(Lc,",
+			"good",
+			"pT",
+			"mmd",
+			"route",
+			"occurrence",
+			"",
+			"overallTtfb",
+			"deltaTtfb"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 3,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "dependencies.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6910,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								471,
+								471
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/User/star.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 3.0,
+						"translation.y": 5.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "topsort.star",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 2515,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/User/star.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "astUtils.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6946,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								28,
+								28
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/User/star.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "check.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 19357,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								8511,
+								8511
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/User/star.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2737.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "types.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8569,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								132,
+								1099
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 70.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "good.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 369,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								367,
+								367
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "test/checkTest.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 876,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								874,
+								874
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "freshen.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4057,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3562,
+								3564
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 993.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "test/typeParseTest.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1021,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								663,
+								663
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 10,
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "dict.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3229,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								158,
+								158
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "contracts.star",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 489,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								93,
+								93
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 100.0
+	},
+	"output.package_dev":
+	{
+		"height": 100.0
+	},
+	"pinned_build_system": "",
+	"project": "star-in-star.sublime-project",
+	"replace":
+	{
+		"height": 64.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"utils.star"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 183.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
