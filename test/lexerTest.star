@@ -5,7 +5,7 @@ worksheet{
   import operators;
 
   prc force(Fl) do {
-    var TkSt := tokenize("file:sampletoks")
+    var TkSt := tokenize(Fl)
 
     while nextToken(TkSt,standardOps) matches (nxt,NextSt) and nxt!=terminal do {
       logMsg(info,"Token: $nxt")
@@ -14,4 +14,5 @@ worksheet{
   }
 
   perform force("file:sampletoks")
+  perform force("file:stringToks")
 }

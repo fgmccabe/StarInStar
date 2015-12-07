@@ -11,7 +11,12 @@ freshen is package{
             case iTvar{value=V} is V=unTyped?Tp:rewrite(V)
           	case iKvar(_,_) is Tp
           	case iBvar(Nm) where Mp[Nm] has value Kt is Kt
-          	case iType(_) is Tp
+/*
+            case iBvar(Nm) is valof{
+              logMsg(info,"Cannot handle bound var $Tp from bounds $Mp")
+              valis Tp
+            }
+*/          	case iType(_) is Tp
           	case iFace(Flds,Tps) is iFace(frMap(Flds),frMap(Tps))
           	case iTuple(Flds) is iTuple(map(rewrite,Flds))
             case iFnTp(A,R) is iFnTp(rewrite(A),rewrite(R))
@@ -74,7 +79,7 @@ freshen is package{
         	    ContinueWith(T)),razer)
           fun razer() is raise "problem"
         } in rewrite
-  } in frshnUp(M)(Typ)
+  } in (frshnUp(M)(Typ),M)
 
   private
   prc setConstraint(T matching iTvar{ constraints := Cs },Cx) do 
@@ -110,5 +115,62 @@ freshen is package{
   fun freshenForUse(Tp) is frshn(Tp,dictionary of [],nVar,skolemize)
   fun freshenForEvidence(Tp) is frshn(Tp,dictionary of [],skolemize,nVar)
 
-  fun typeVar() is iTvar{ id = nextId(); name="t$id"; value := unTyped; constraints := []}
+  fun freshen(Tp) where freshenForUse(Tp) matches (fTp,_) is fTp
+  fun evidence(Tp) where freshenForEvidence(Tp) matches (fTp,_) is fTp
+
+  fun typeVar() is valof{
+    def I is nextId();
+    valis iTvar{ id = I; name="t$I"; value := unTyped; constraints := []}
+  }
+
+  fun generalize(tipe,Occurs) is let {
+    var foundVars := dictionary of []
+    var constraints := set of []
+    fun genType(Tp) is switch deRef(Tp) in {
+      case iTvar{} is genVar(deRef(Tp))
+      case iKvar(_,_) is Tp
+      case iBvar(Nm) is Tp
+      case iType(_) is Tp
+      case iFace(Flds,Tps) is iFace(frMap(Flds),frMap(Tps))
+      case iTuple(Flds) is iTuple(map(genType,Flds))
+      case iFnTp(A,R) is iFnTp(genType(A),genType(R))
+      case iConTp(A,R) is iConTp(genType(A),genType(R))
+      case iPtTp(A,R) is iPtTp(genType(A),genType(R))
+      case iRfTp(T) is iRfTp(genType(T))
+      case iTpExp(T,A) is iTpExp(genType(T),genType(A))
+      case iUniv(Nm,bTp) is iUniv(Nm,genType(bTp))
+      case iExists(Nm,bTp) is iExists(Nm,genType(bTp))
+      case iConstrained(A,X) is iConstrained(genType(A),genConstraint(X))
+      case unTyped is unTyped
+    }
+
+    fun frMap(Flds) is dictionary of {all Nm->genType(Tp) where Nm->Tp in Flds}
+
+    fun genVar(Tp matching iTvar{id=i;name=name;constraints=c}) is 
+      foundVars[Tp] has value gTp ? gTp : Occurs(Tp) ? Tp : valof{
+        def boundVar is iBvar(name)
+        foundVars[Tp] := boundVar
+        for con in c do {
+          extend constraints with con
+        }
+        valis boundVar
+      }
+
+    fun genConstraint(iContractCon(iContract{name=conName;argTypes=argTypes;depTypes=depTypes})) is
+          iContractCon(iContract{name=conName;argTypes=map(genType,argTypes);depTypes=map(genType,depTypes)})
+     |  genConstraint(iFieldCon(Tp,Name,fldTp)) is iFieldCon(genType(Tp),Name,genType(fldTp))
+     |  genConstraint(iFieldKind(Tp,N,K)) is iFieldKind(genType(Tp),N,K)
+     |  genConstraint(iTypeCon(Tp,N,fldTp)) is iTypeCon(genType(Tp),N,genType(fldTp))
+     |  genConstraint(hasKind(Tp,K)) is hasKind(genType(Tp),K)
+     |  genConstraint(instanceOf(Tp,iTp)) is instanceOf(genType(Tp),genType(iTp))
+     |  genConstraint(isTuple(Tp)) is isTuple(genType(Tp))
+
+    fun bindTp((_,iBvar(nm)),tp) is iUniv(nm,tp)
+
+    fun bindCon(Cn,T) is iConstrained(T,genConstraint(Cn))
+
+  } in valof{
+      def gTp is genType(tipe)
+      valis rightFold(bindTp,rightFold(bindCon,gTp,constraints),foundVars)
+    }
 }

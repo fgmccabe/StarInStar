@@ -29,9 +29,9 @@ worksheet{
 
   show freshenForUse(parseType(P2,D))
 
-  D := declareType(D,"option",algebraic(iUniv("t",iTpExp(iType("option"),iBvar("t"))), 
+  D := declareAlgebraic(D,"option",iUniv("t",iTpExp(iType("option"),iBvar("t"))), 
       dictionary of ["none"->iUniv("t",iTpExp(iType("option"),iBvar("t"))),
-                     "some"->iUniv("t",iConTp(iBvar("t"),iTpExp(iType("option"),iBvar("t"))))]))
+                     "some"->iUniv("t",iConTp(iBvar("t"),iTpExp(iType("option"),iBvar("t"))))])
 
   def P3 is parseString("for all r,n such that (r)=>option of n where sequence over r determines n")
 

@@ -4,7 +4,7 @@ hex is package{
         grabHex(L,Id,Hx*16+hexDigitVal(X),Cx+1)
    |  grabHex(L,Id,Hx,Cx) is (cons(Hx as char,Id),L,Cx)
 
-  fun isHexDigit(X) is ('0'<=X and X<='9') or ('a'<=X and X<='f') or ('A'<=X and X<='F')
+  fun isHexDigit(X) is ('0'=<X and X=<'9') or ('a'=<X and X=<'f') or ('A'=<X and X=<'F')
 
   private
   fun isDigit('0') is true
@@ -19,7 +19,7 @@ hex is package{
    |  isDigit('9') is true
    |  isDigit(_) default is false
   
-  fun hexDigitVal(X) where '0'<=X and X<='9' is X as integer-'0' as integer
-   |  hexDigitVal(X) where 'a'<=X and X<='f' is X as integer-'a' as integer+10
-   |  hexDigitVal(X) where 'A'<=X and X<='F' is X as integer-'A' as integer+10
+  fun hexDigitVal(X) where '0'=<X and X=<'9' is X as integer-'0' as integer
+   |  hexDigitVal(X) where 'a'=<X and X=<'f' is X as integer-'a' as integer+10
+   |  hexDigitVal(X) where 'A'=<X and X=<'F' is X as integer-'A' as integer+10
 }

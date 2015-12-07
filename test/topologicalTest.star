@@ -1,6 +1,5 @@
 worksheet{
   import topsort
-  import collections
 
   -- test the topological sort
 

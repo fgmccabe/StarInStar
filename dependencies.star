@@ -1,18 +1,21 @@
 dependencies is package{
-  private import collections
   private import topsort
   private import ast
   private import good
   private import errors
   private import astUtils
 
-  type category is expsion or pttrn or tipe or other
+  -- name spaces
+  type category is expsion or tipe or other
+  type astGroup is alias of list of ((ast, category,set of string))
 
-  dependencies has type (list of ast) => list of list of ast
+  dependencies has type (list of ast) => list of astGroup
   fun dependencies(Th) is let{
     def definitions is programDefs(Th)
     def groups is topological(definitions)
-  } in (list of { all list of {all T where topDef{orig=T} in group} where group in groups})
+    fun projectCat(D) is someValue(any of C where (C,_) in D)
+    fun projectDefs(D) is set of {all Df where (_,Df) in D}
+  } in (list of { all list of {all (T,projectCat(D),projectDefs(D)) where topDef{orig=T;definitions=D} in group} where group in groups})
 
   private
   programDefs has type (list of ast) => list of topDef of (ast,(category,string))
@@ -23,18 +26,18 @@ dependencies is package{
 
   private
   fun definitionStruct(D) is switch D in {
-        case asApply(_,asName(_,"type"),_) is (analyseTypeDefn,tipe,setOfGood(definedTypeName(D),tipe),D)
-        case asApply(_,asName(_,"fun"),_) is (analyseFunDefn,expsion,setOfGood(definedFunName(D),expsion),D)
-        case asApply(_,asName(_,"prc"),_) is (analysePrcDefn,expsion,setOfGood(definedPrcName(D),expsion),D)
-        case asApply(_,asName(_,"ptn"),_) is (analysePtnDefn,expsion,setOfGood(definedPtnName(D),expsion),D)
-        case asApply(_,asName(_,"def"),_) is (analyseDefDefn,expsion,map((Nm)=>(expsion,Nm),definedDefNames(D)),D)
-        case asApply(_,asName(_,"var"),_) is (analyseVarDefn,expsion,map((Nm)=>(expsion,Nm),definedVarNames(D)),D)
-        case asApply(_,asName(_,"contract"),_) is (analyseContract,tipe,setOfGood(definedContractName(D),tipe),D)
-        case asApply(_,asName(_,"implementation"),_) is (analyseImplementation,expsion,setOfGood(implementedContractName(D),expsion),D)
-        case asApply(_,asName(_,"import"),_) is (analyseImport,other,set of [],D)
-        case asApply(_,asName(_,"is"),asTuple(_,"()",[_,asApply(_,asName(_,"import"),_)])) is (analyseImport,other,set of [],D)
-        case X default is (analyseOther,other,set of [],D)
-      }
+    case asApply(_,asName(_,"type"),_) is (analyseTypeDefn,tipe,setOfGood(definedTypeName(D),tipe),D)
+    case asApply(_,asName(_,"fun"),_) is (analyseFunDefn,expsion,setOfGood(definedFunName(D),expsion),D)
+    case asApply(_,asName(_,"prc"),_) is (analysePrcDefn,expsion,setOfGood(definedPrcName(D),expsion),D)
+    case asApply(_,asName(_,"ptn"),_) is (analysePtnDefn,expsion,setOfGood(definedPtnName(D),expsion),D)
+    case asApply(_,asName(_,"def"),_) is (analyseDefDefn,expsion,map((Nm)=>(expsion,Nm),definedDefNames(D)),D)
+    case asApply(_,asName(_,"var"),_) is (analyseVarDefn,expsion,map((Nm)=>(expsion,Nm),definedVarNames(D)),D)
+    case asApply(_,asName(_,"contract"),_) is (analyseContract,tipe,setOfGood(definedContractName(D),tipe),D)
+    case asApply(_,asName(_,"implementation"),_) is (analyseImplementation,expsion,setOfGood(implementedContractName(D),expsion),D)
+    case asApply(_,asName(_,"import"),_) is (analyseImport,other,set of [],D)
+    case asApply(_,asName(_,"is"),asTuple(_,"()",[_,asApply(_,asName(_,"import"),_)])) is (analyseImport,other,set of [],D)
+    case X default is (analyseOther,other,set of [],D)
+  }
 
   private
   fun buildDefDict(L) is leftFold((Dc,E)=>refDict(E,Dc),dictionary of [],L)
@@ -80,29 +83,29 @@ dependencies is package{
         pipeFold((Refs,Eqn)=>analyseEquation(Eqn,Refs,All,Excl),set of [],Eqns)
 
   private
-  fun analyseEquation(isEquation(_,Lhs,Rhs),Refs,All,Excl) is findRefs(Rhs,expsion,All,findRefs(Lhs,pttrn,All,Refs,Excl),Excl)
+  fun analyseEquation(isEquation(_,Lhs,Rhs),Refs,All,Excl) is findRefs(Rhs,expsion,All,findRefs(Lhs,expsion,All,Refs,Excl),Excl)
 
   private
   fun analysePrcDefn(isPrcDef(_,Rules),All,Excl) is
         pipeFold((Refs,Rle)=>analyseActionRule(Rle,Refs,All,Excl),set of [],Rules)
 
   private
-  fun analyseActionRule(isActionRule(_,Lhs,Rhs),Refs,All,Excl) is findRefs(Rhs,expsion,All,findRefs(Lhs,pttrn,All,Refs,Excl),Excl)
+  fun analyseActionRule(isActionRule(_,Lhs,Rhs),Refs,All,Excl) is findRefs(Rhs,expsion,All,findRefs(Lhs,expsion,All,Refs,Excl),Excl)
 
   private
   fun analysePtnDefn(isPtnDef(_,Rules),All,Excl) is
         pipeFold((Refs,Rle)=>analysePttrnRule(Rle,Refs,All,Excl),set of [],Rules)
 
   private
-  fun analysePttrnRule(isPttrnRule(_,Lhs,Rhs),Refs,All,Excl) is findRefs(Lhs,expsion,All,findRefs(Rhs,pttrn,All,Refs,Excl),Excl)
+  fun analysePttrnRule(isPttrnRule(_,Lhs,Rhs),Refs,All,Excl) is findRefs(Lhs,expsion,All,findRefs(Rhs,expsion,All,Refs,Excl),Excl)
 
   private
   fun analyseDefDefn(isDefDef(_,isEquation(_,Lhs,Rhs)),All,Excl) is 
-    findRefs(Rhs,expsion,All,findRefs(Lhs,pttrn,All,set of [],Excl),Excl)
+    findRefs(Rhs,expsion,All,findRefs(Lhs,expsion,All,set of [],Excl),Excl)
 
   private
   fun analyseVarDefn(isVarDef(_,isAssignment(_,Lhs,Rhs)),All,Excl) is 
-    findRefs(Rhs,expsion,All,findRefs(Lhs,pttrn,All,set of [],Excl),Excl)
+    findRefs(Rhs,expsion,All,findRefs(Lhs,expsion,All,set of [],Excl),Excl)
 
   private
   fun analyseContract(isContractDef(_,conType,conBody),All,Excl) is
@@ -122,11 +125,11 @@ dependencies is package{
   fun findRefs(Trm,Mode,All,soFr,Excl) is let{
     fun fndRefs(asName(_,Nm),ky,soFar) where not (ky,Nm) in Excl and 
           All[ky] has value Defs and (ky,Nm) in Defs is set of [(ky,Nm),..soFar]
-   |  fndRefs(asName(_,Nm), pttrn, soFar) is soFar
-   |  fndRefs(asApply(Lc,asName(_,"where"),asTuple(_,_,list of [Lhs,Rhs])),pttrn,soFar) is 
-        fndRefs(Lhs,pttrn,fndRefs(Rhs,expsion,soFar))
-   |  fndRefs(asApply(Lc,asName(_,"default"),asTuple(_,_,[Lhs])),pttrn,soFar) is 
-        fndRefs(Lhs,pttrn,fndRefs(Lhs,expsion,soFar))
+   |  fndRefs(asName(_,Nm), expsion, soFar) is soFar
+   |  fndRefs(asApply(Lc,asName(_,"where"),asTuple(_,_,list of [Lhs,Rhs])),expsion,soFar) is 
+        fndRefs(Lhs,expsion,fndRefs(Rhs,expsion,soFar))
+   |  fndRefs(asApply(Lc,asName(_,"default"),asTuple(_,_,[Lhs])),expsion,soFar) is 
+        fndRefs(Lhs,expsion,fndRefs(Lhs,expsion,soFar))
    |  fndRefs(asApply(Lc,asName(_,"has type"),asTuple(_,_,list of [Lhs,Rhs])),cat,soFar) is 
         fndRefs(Lhs,cat,fndRefs(Rhs,tipe,soFar))
    |  fndRefs(asApply(_,O,A),sK,soFar) is fndRefs(A,sK,fndRefs(O,sK,soFar))

@@ -5,7 +5,7 @@ lexer is package{
   private import stream
 
   type token is idTok(string,srcLoc)
-  or integerTok(integer,srcLoc)
+    or integerTok(integer,srcLoc)
     or longTok(long,srcLoc)
     or floatTok(float,srcLoc)
     or decimalTok(decimal,srcLoc)
@@ -14,6 +14,19 @@ lexer is package{
     or regexpTok(string,srcLoc)
     or interpolatedString(list of interpolationElement,srcLoc)
     or terminal
+
+  implementation hasLocation over token is {
+    fun locOf(idTok(_,Lc)) is Lc
+     |  locOf(integerTok(_,Lc)) is Lc
+     |  locOf(longTok(_,Lc)) is Lc
+     |  locOf(floatTok(_,Lc)) is Lc
+     |  locOf(decimalTok(_,Lc)) is Lc
+     |  locOf(charTok(_,Lc)) is Lc
+     |  locOf(stringTok(_,Lc)) is Lc
+     |  locOf(regexpTok(_,Lc)) is Lc
+     |  locOf(interpolatedString(_,Lc)) is Lc
+     |  locOf(terminal) is missing
+  }
 
   type interpolationElement is interpolateElement(interpolationMode,string,string,srcLoc) or literalSegment(string,srcLoc)
 
@@ -273,7 +286,8 @@ lexer is package{
   fun isIdentifierChar(char(C)) is __isIdentifierPart(C)
 
   private
-  fun isHexDigit(X) is ('0'<=X and X<='9') or ('a'<=X and X<='f') or ('A'<=X and X<='F')
+  fun isHexDigit(X) is ('0'=<X and X=<'9') or ('a'=<X and X=<'f') or ('A'=<X and X=<'F')
+  
   private
   fun isDigit('0') is true
    |  isDigit('1') is true
@@ -287,9 +301,9 @@ lexer is package{
    |  isDigit('9') is true
    |  isDigit(_) default is false
 
-  fun hexDigitVal(X) where '0'<=X and X<='9' is X as integer-'0' as integer
-   |  hexDigitVal(X) where 'a'<=X and X<='f' is X as integer-'a' as integer+10
-   |  hexDigitVal(X) where 'A'<=X and X<='F' is X as integer-'A' as integer+10
+  fun hexDigitVal(X) where '0'=<X and X=<'9' is X as integer-'0' as integer
+   |  hexDigitVal(X) where 'a'=<X and X=<'f' is X as integer-'a' as integer+10
+   |  hexDigitVal(X) where 'A'=<X and X=<'F' is X as integer-'A' as integer+10
 
   revImplode has type (cons of char)=>string
   private fun revImplode(X) is string(__string_rev_implode(X))
@@ -318,17 +332,6 @@ lexer is package{
 
     fun showLc(Lc) is ppDisp(Lc)
   }
-
-  fun tokenLoc(idTok(_,Lc)) is Lc
-   |  tokenLoc(integerTok(_,Lc)) is Lc
-   |  tokenLoc(longTok(_,Lc)) is Lc
-   |  tokenLoc(floatTok(_,Lc)) is Lc
-   |  tokenLoc(decimalTok(_,Lc)) is Lc
-   |  tokenLoc(charTok(_,Lc)) is Lc
-   |  tokenLoc(stringTok(_,Lc)) is Lc
-   |  tokenLoc(regexpTok(_,Lc)) is Lc
-   |  tokenLoc(interpolatedString(_,Lc)) is Lc
-   |  tokenLoc(terminal) is missing
 
   fun tkLoc(tokenState{currLine=L; currOff=F; currPos=P},Ln) is
     someWhere{lineCount=L;lineOffset=F;charCount=P;length=Ln}

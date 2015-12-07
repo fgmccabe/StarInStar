@@ -1,6 +1,7 @@
 catalog{
   content is hash{
     "ast" -> "../ast.star";
+    "good"-> "../starlib/good.star";
     "canonical"-> "../canonical.star";
     "dict"-> "../dict.star";
     "errors" -> "../errors.star";
@@ -14,10 +15,8 @@ catalog{
     "redblack" -> "../starlib/redblack.star";
     "binomial" -> "../starlib/binomial.star";
     "pairHeap" -> "../starlib/pairHeap.star";
-    "collections" -> "../starlib/collections.star";
     "check" -> "../check.star";
     "topsort" -> "../topsort.star";
     "dependencies" -> "../dependencies.star";
-
   }
 }

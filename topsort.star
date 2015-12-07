@@ -1,5 +1,4 @@
 topsort is package{
-  private import collections
 
   type topDef of (o,t) where equality over t and equality over o is topDef{
     orig has type o
@@ -66,7 +65,7 @@ topsort is package{
         valis low
     }
 
-    fun minPoint(x,y) where x<=y is x
+    fun minPoint(x,y) where x=<y is x
      |  minPoint(_,y) default is y
 
     fun push(D) is valof{

@@ -1,13 +1,17 @@
 astUtils is package{
+  /*
+  * Utility programs to help process ast terms
+  */
   private import ast
   private import good
-  private import collections
 
   ptn isFunDef(Lc,Eqns) from asApply(Lc,asName(_,"fun"),asTuple(_,_,list of [Eqns]))
 
   ptn isLambdaAst(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"=>"),asTuple(_,_,list of [Lhs,Rhs]))
 
   ptn isMemoAst(Lc,Rhs) from asApply(Lc,asName(_,"memo"),asTuple(_,_,list of [Rhs]))
+
+  ptn isMemoDef(Lc,Lhs,Rhs) from isDefDef(Lc,Eqn) where Eqn matches isEquation(_,Lhs,isMemoAst(_,Rhs))
 
   ptn isPtnDef(Lc,Eqns) from asApply(Lc,asName(_,"ptn"),asTuple(_,_,list of [Eqns]))
 
@@ -37,6 +41,8 @@ astUtils is package{
 
   ptn isAssignment(Lc,Lhs,Rhs) from asApply(Lc,asName(_,":="),asTuple(_,_,list of [Lhs,Rhs]))
 
+  ptn isTypeDef(Lc,Rl) from asApply(Lc,asName(_,"type"),asTuple(_,_,list of [Rl]))
+
   ptn isTypeAssignment(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"type"),asTuple(_,"()",[asApply(_,asName(_,"="),asTuple(_,_,[Lhs,Rhs]))]))
 
   ptn isTypeAnnotation(Lc,Lhs,Tp) from asApply(Lc,asName(_,"has type"),asTuple(_,"()",[Lhs,Tp]))
@@ -53,12 +59,13 @@ astUtils is package{
   ptn isIden(Lc,Nm) from asName(Lc,Nm)
    |  isIden(Lc,Nm) from asTuple(Lc,"()",list of [asName(_,Nm)])
 
+  ptn isLblRecord(Lc,Op,Content) from asApply(Lc,Op,asTuple(_,"{}",Content))
+
   ptn isFieldAccess(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"."),asTuple(_,_,list of [Lhs,Rhs]))
 
   ptn isSubstitute(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"substitute"),asTuple(_,_,list of [Lhs,Rhs]))
 
-  ptn isLetTerm(Lc,Body,Bound) from 
-      asApply(Lc,asName(_,"in"),asTuple(_,_,list of [asApply(_,asName(_,"let"), asTuple(_,"{}",Body)),Bound]))
+  ptn isLetTerm(Lc,Body,Bound) from isUnary(Lc,"let",isBinary(_,"in",isBlock(_,Body),Bound))
 
   ptn isUniversalQ(Lc,astFold(pickVar,set of [],",",Vrs),Tp) from
       asApply(Lc,asName(_,"such that"),asTuple(_,"()",list of [asApply(_,asName(_,"for all"),Vrs),Tp]))
@@ -97,15 +104,15 @@ astUtils is package{
 
   private
   fun checkPipe(Trm,F) is let{
-        fun checkRules(asApply(_,asName(_,"|"),asTuple(_,"()",list of [L,R]))) is
-              compareResult(checkRules(L),checkRules(R))
-         |  checkRules(T) is F(T)
+    fun checkRules(asApply(_,asName(_,"|"),asTuple(_,"()",list of [L,R]))) is
+          compareResult(checkRules(L),checkRules(R))
+     |  checkRules(T) is F(T)
 
-        fun compareResult(L matching noGood(_),_) is L
-         |  compareResult(_,R matching noGood(_)) is R
-         |  compareResult(good(L),good(R)) is L=R ? good(L) : noGood(("$L not same as $R",locOf(Trm)))
+    fun compareResult(L matching noGood(_),_) is L
+     |  compareResult(_,R matching noGood(_)) is R
+     |  compareResult(good(L),good(R)) is L=R ? good(L) : noGood(("$L not same as $R",locOf(Trm)))
 
-      } in checkRules(Trm)
+  } in checkRules(Trm)
 
   private
   fun equationName(isEquation(_,Lhs,Rhs)) is headName(Lhs)

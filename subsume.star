@@ -29,22 +29,22 @@ subsume is package{
       case (iRfTp(A1),iRfTp(A2)) is checkSame(A1,A2);
       case (iTpExp(C1,A1),iTpExp(C2,A2)) is both(checkSub(C1,C2),()=>checkSub(A1,A2));
       case (iUniv(_,_),_) is valof{
-      	def f1 is freshenForUse(v1)
+      	def (f1,_) is freshenForUse(v1)
       	valis sub(f1,deRef(f1),t2,v2)
       };
       case (_,iUniv(_,_)) is valof{
-      	def f2 is freshenForEvidence(v2)
+      	def (f2,_) is freshenForEvidence(v2)
       	valis sub(t1,v1,f2,deRef(f2))
       };
       case (iExists(_,_),_) is valof{
-      	def e1 is freshenForUse(v1)
+      	def (e1,_) is freshenForUse(v1)
       	def mark is size(resets)
       	def Rslt is sub(e1,deRef(e1),t2,v2)
       	resetToMark(mark)
       	valis Rslt
       };
       case (_,iExists(_,_)) is valof{
-      	def e2 is freshenForEvidence(v2)
+      	def (e2,_) is freshenForEvidence(v2)
       	def mark is size(resets)
       	def Rslt is sub(t1,v1,e2,deRef(e2))
       	resetToMark(mark)
@@ -135,8 +135,8 @@ subsume is package{
 
     fun checkKind(iType(Nm),K) where findType(D,Nm) has value Desc is 
       switch Desc in {
-        case typeIs(iT) is checkForm(freshenForEvidence(iT),K)
-        case algebraic(iT,_) is checkForm(freshenForEvidence(iT),K)
+        case typeIs(iT) is checkForm(evidence(iT),K)
+        case algebraic(iT,_) is checkForm(evidence(iT),K)
         case typeAlias(iF) where iF(iType(Nm)) has value aTp is checkKind(aTp,K)
         case _ default is noGood("$Nm not a $K type")
       }

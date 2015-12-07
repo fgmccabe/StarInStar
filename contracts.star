@@ -1,6 +1,7 @@
 contracts is package{
   private import dict
   private import canonical
+  private import types
 
   fun implementationName(iContract{name=N; argTypes = A}) is let {
     fun allNames(list of [],soFar) is some(soFar)

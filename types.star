@@ -1,5 +1,4 @@
 types is package{
-  private import collections
 
   -- kind of a type
   type kKind is kType or kUnknown or kTypeFun(integer)
@@ -48,7 +47,7 @@ types is package{
         Tp.value = unTyped ?
           ppStr("%"++Tp.name++(Tp.id as string)) :
           showType(Tp.value,Pr)
-   |  showType(iBvar(Nm),_) is ppStr(Nm)
+   |  showType(iBvar(Nm),_) is ppSequence(0,[ppStr("%%"),ppStr(Nm)])
    |  showType(iType(Nm),_) is ppStr(Nm)
    |  showType(iKvar(I,N),_) is ppStr("%%"++N++(I as string))
    |  showType(iTuple(L),Pr) is showTypeList(L)
@@ -96,6 +95,7 @@ types is package{
    |  showType(iConstrained(T,C),Pr) is parenthesize(
         showConstrained(iConstrained(T,C)),Pr<940)
 
+  private
   fun showTypeList(L) is ppSequence(0,
       cons of [
         ppStr("("),
@@ -103,21 +103,26 @@ types is package{
           interleave(cons of { all showType(El,999) where El in L},ppStr(", "))),
         ppStr(")")])
 
+  private
   fun showUniv(iUniv(V,T),Pr) is cons of [ppStr(Pr),ppStr(V),..showUniv(T,",")]
    |  showUniv(T,_) is cons of [ ppStr(" such that "), showType(T,1010)]
 
+  private
   fun showExists(iExists(V,T),Pr) is cons of [ppStr(Pr), ppStr(V),..showExists(T,",")]
    |  showExists(T,_) is cons of [ ppStr(" such that "), showType(T,1010)]
 
+  private
   fun showConstrained(iConstrained(iConstrained(T,C),C1)) is 
         ppSequence(0,cons of [showConstrained(iConstrained(T,C)),
           ppSpace, ppStr("and"), ppSpace, showConstraint(C1)])
    |  showConstrained(iConstrained(T,C)) is 
         ppSequence(0,cons of [showType(T,939), ppSpace, ppStr("where"), ppSpace, showConstraint(C)])
 
+  private
   fun parenthesize(E,false) is E
    |  parenthesize(E,true) is ppSequence(0,cons of [ppStr("("), E, ppStr(")")])
 
+  private
   fun showConstraint(iContractCon(Ct)) where isEmpty(Ct.depTypes) is
         ppSequence(0,cons of [ ppStr(Ct.name), ppStr(" over "), showTypeList(Ct.argTypes)])
    |  showConstraint(iContractCon(Ct)) is
@@ -157,6 +162,7 @@ types is package{
    |  showConstraint(isTuple(T)) is
         ppSequence(0,cons of [ showType(T,899), ppStr(" is tuple")])
 
+  private
   fun showKind(kType) is ppStr("type")
    |  showKind(kUnknown) is ppStr("unknown")
    |  showKind(kTypeFun(0)) is ppStr("type")
@@ -192,8 +198,9 @@ types is package{
 
     fun checkVar(soFar,iTvar{id=N}) is add_element(soFar,N)
      |  checkVar(soFar,Tp) is varsIn(soFar,Tp)
-  } in varsIn(emptySet,T)
+  } in varsIn(set of [],T)
 
+  private
   mapFold has type ((set of integer,iType)=>set of integer,set of integer,dictionary of (string,iType))=>set of integer
   fun mapFold(F,I,D) is leftFold(fn(A,(_,T))=>F(A,T),I,D)
 
@@ -201,4 +208,12 @@ types is package{
 
   fun deRef(tV matching iTvar{}) is tV.value=unTyped ? tV : deRef(tV.value)
    |  deRef(T) default is T
+
+  fun typeName(Tp) is switch deRef(Tp) in {
+    case iType(Nm) is some(Nm)
+    case iTpExp(Op,Nm) is typeName(Op)
+    case iUniv(_,QT) is typeName(QT)
+    case iExists(_,QT) is typeName(QT)
+    case iConstrained(CT,_) is typeName(CT)
+  }
 }

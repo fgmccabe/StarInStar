@@ -7,7 +7,7 @@ binomial is package{
 
   private 
   fun link(t1 matching binNd(R,x1,c1), t2 matching binNd(_,x2,c2)) is
-      x1<=x2 ?
+      x1=<x2 ?
 	      binNd(R+1,x1,list of [t2,..c1]) :
         binNd(R+1,x2,list of [t1,..c2])
 
@@ -41,7 +41,7 @@ binomial is package{
   fun removeMinTree(list of [t]) is (t,list of [])
    |  removeMinTree(list of [t,..ts]) is valof{
         def (t1,ts1) is removeMinTree(ts);
-        valis root(t)<=root(t1) ?
+        valis root(t)=<root(t1) ?
           (t,ts) :
           (t1,list of [t,..ts1])
       }

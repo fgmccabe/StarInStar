@@ -289,6 +289,7 @@ operators is package{
     opTable := defineNonAssocInfix("=",900,opTable)
     opTable := defineNonAssocInfix(">",900,opTable)
     opTable := defineNonAssocInfix("substitute",900,opTable)
+    opTable := defineNonAssocInfix("=<",900,opTable)
     opTable := defineNonAssocInfix("<=",900,opTable)
     opTable := defineNonAssocPrefix("ref",900,opTable)
     opTable := defineNonAssocPrefix("kind",900,opTable)
@@ -353,7 +354,7 @@ operators is package{
 
   isPrefixOp has type (string,operators,integer) => option of operSpec
   fun isPrefixOp(Nm,Ops,Pr) where Ops.ops[Nm] has value Specs and Specs[prefixOp] has value prOp is valof{
-      if prOp.minPriority<=Pr then
+      if prOp.minPriority=<Pr then
         valis some(prOp)
       else
         valis none
@@ -361,7 +362,7 @@ operators is package{
    |  isPrefixOp(Nm,Ops,Pr) default is none
     
   fun isInfixOp(Nm,Ops,Pr) where Ops.ops[Nm] has value Specs and Specs[infixOp] has value opSpec is valof{
-        if opSpec.minPriority<=Pr then
+        if opSpec.minPriority=<Pr then
           valis some(opSpec)
         else
           valis none
@@ -369,7 +370,7 @@ operators is package{
    |  isInfixOp(Nm,Ops,Pr) default is none
     
   fun isPostfixOp(Nm,Ops,Pr) where Ops.ops[Nm] has value Specs and Specs[postfixOp] has value opSpec is valof{
-        if opSpec.minPriority<=Pr then
+        if opSpec.minPriority=<Pr then
           valis some(opSpec)
         else
           valis none
@@ -387,7 +388,7 @@ operators is package{
 
   fun isOperator(Nm,Ops,Pr) where Ops.ops[Nm] has value opSpecs is valof{
         for Spec in opSpecs do {
-          if Spec.minPriority<=Pr then
+          if Spec.minPriority=<Pr then
           	valis true
         }
         valis false

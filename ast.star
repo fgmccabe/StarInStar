@@ -14,23 +14,26 @@ ast is package{
     or asTuple(srcLoc,string,list of ast)
     or asApply(srcLoc,ast,ast)
 
-  fun locOf(asName(L,_)) is L
-   |  locOf(asInteger(L,_)) is L
-   |  locOf(asLong(L,_)) is L
-   |  locOf(asFloat(L,_)) is L
-   |  locOf(asDecimal(L,_)) is L
-   |  locOf(asChar(L,_)) is L
-   |  locOf(asString(L,_)) is L
-   |  locOf(asApply(L,_,_)) is L
-   |  locOf(asTuple(L,_,_)) is L
+  implementation hasLocation over ast is {
+    locOf = astLocOf
+  } using {
+    fun astLocOf(asName(L,_)) is L
+     |  astLocOf(asInteger(L,_)) is L
+     |  astLocOf(asLong(L,_)) is L
+     |  astLocOf(asFloat(L,_)) is L
+     |  astLocOf(asDecimal(L,_)) is L
+     |  astLocOf(asChar(L,_)) is L
+     |  astLocOf(asString(L,_)) is L
+     |  astLocOf(asApply(L,_,_)) is L
+     |  astLocOf(asTuple(L,_,_)) is L
+  }
 
   fun isName(asName(_,Nm)) is some(Nm)
    |  isName(_) default is none
 
   fun unary(Lc,Op,Arg) is oneApply(Lc,asName(Lc,Op),Arg)
 
-  fun isUnary(asApply(_,asName(_,Nm),asTuple(_,"()",list of [E])),Nm) is some(E)
-   |  isUnary(_,_) default is none
+  ptn isUnary(Lc,Nm,E) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [E]))
 
   fun oneApply(Lc,Op,Arg) is asApply(Lc,Op,asTuple(Lc,"()",list of [Arg]))
 
@@ -38,22 +41,23 @@ ast is package{
 
   fun binApply(Lc,Op,Lhs,Rhs) is asApply(Lc,Op,asTuple(Lc,"()",list of [Lhs, Rhs]))
 
-  fun isBinary(asApply(_,asName(_,Nm),asTuple(_,"()",list of [L,R])),Nm) is some((L,R))
-   |  isBinary(_,_) default is none
+  ptn isBinary(Lc,Nm,L,R) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [L,R]))
 
-  fun isTernary(asApply(_,asName(_,Nm),asTuple(_,"()",list of [L,M,R])),Nm) is some((L,M,R))
-   |  isTernary(_,_) default is none
+  ptn isTernary(Lc,Nm,L,M,R) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [L,M,R]))
 
-  fun isQuad(asApply(_,asName(_,Nm),asTuple(_,"()",list of [L,M,M2,R])),Nm) is some((L,M,M2,R))
-   |  isQuad(_,_) default is none
+  ptn isQuad(Lc,Nm,L,M,M2,R) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [L,M,M2,R]))
 
   fun nAry(Lc,Op,Args) is asApply(Lc,asName(Lc,Op),asTuple(Lc,"()",Args))
 
+  ptn isApply(Lc,Op,Args) from asApply(Lc,asName(_,Op),asTuple(_,"()",Args))
+
   fun block(Lc,els) is asTuple(Lc,"{}",els)
+
+  ptn isBlock(Lc,els) from asTuple(Lc,"{}",els)
 
   fun tple(Lc,els) is asTuple(Lc,"()",els)
 
-  fun deComma(T) where isBinary(T,",") matches some((L,R)) is list of [L,..deComma(R)]
+  fun deComma(isBinary(_,",",L,R)) is list of [L,..deComma(R)]
    |  deComma(T) default is list of [T]
 
   fun deParen(asTuple(_,"()",list of [E])) is E

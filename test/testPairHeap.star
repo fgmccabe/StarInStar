@@ -4,7 +4,7 @@ testPairHeap is package{
   def orderedStrings is ordered{
     type string counts as t;
 
-    fun leq(x,y) is x<=y;
+    fun leq(x,y) is x=<y;
     fun eq(x,y) is x=x;
     fun gt(x,y) is x>y;
   }

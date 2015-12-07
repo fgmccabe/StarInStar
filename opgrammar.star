@@ -12,7 +12,7 @@ opgrammar is package{
     switch Tk in {
       case idTok(Name,Lc) is valof{
         if isPrefixOp(Name,Ops,priority) matches some(OpSpec) then {
-          if OpSpec.priority<=priority then {
+          if OpSpec.priority=<priority then {
             def (RToks,_,Right) is term(nToks,OpSpec.right,Ops)
             valis (RToks,OpSpec.priority,
               oneApply(mergeLocation(Lc,locOf(Right)),asName(Lc,Name),Right))
@@ -31,9 +31,9 @@ opgrammar is package{
       case terminal is (Toks,0,Left)
       case idTok(Op,Lc) where isRightBracket(Op,Ops) matches some(_) is (Toks,LeftPrior,Left)
       case idTok(Op,Lc) where isInfixOp(Op,Ops,Prior) matches some(InfSpec) and 
-            InfSpec.left>=LeftPrior and InfSpec.priority <= Prior is valof{
+            InfSpec.left>=LeftPrior and InfSpec.priority =< Prior is valof{
         if isPostfixOp(Op,Ops,Prior) matches some(Post) and 
-          Post.left>=LeftPrior and Post.priority <= Prior then{
+          Post.left>=LeftPrior and Post.priority =< Prior then{
             var treatAsPostfix := false
 
             if nxtTok(Rest,Ops) matches (idTok(Nm,nLc),_) then{
@@ -67,7 +67,7 @@ opgrammar is package{
           }
 
         case idTok(Op,Lc) where isPostfixOp(Op,Ops,Prior) matches some(PostSpec) and 
-            PostSpec.left>=LeftPrior and PostSpec.priority <=Prior is 
+            PostSpec.left>=LeftPrior and PostSpec.priority =<Prior is 
           termRight((Rest,PostSpec.priority,
              oneApply(mergeLocation(locOf(Left),Lc),
              asName(Lc,Op),Left)),Prior,Ops)
@@ -119,203 +119,205 @@ opgrammar is package{
               parseBrackets(Lc,Toks,Ops,BkSpec) : (Toks,asName(Lc,Nm),Lc)
       }
    |  term00(Tks,Ops) where nxtTok(Tks,Ops) matches (Tk,Toks) is valof{
-        reportError("expecting an identifier, not $Tk",list of [tokenLoc(Tk)])
+        reportError("expecting an identifier, not $Tk",list of [locOf(Tk)])
         valis term00(Toks,Ops)
       }
 
-  private fun peekLoc(Toks,Ops) where nxtTok(Toks,Ops) matches (Tk,_) is tokenLoc(Tk)
+  private fun peekLoc(Toks,Ops) where nxtTok(Toks,Ops) matches (Tk,_) is locOf(Tk)
 
-  fun checkForOperators(T,Ops) where isUnary(T,"\#") matches some(Meta) is valof{
-        if isTernary(Meta,"infix") has value (Lf,Md,Rt) then {
-          if Lf matches asString(_,Op) then{
-            if Md matches asInteger(_,Pr) then {
-              if Rt matches asInteger(_,MinPrior) then
-                valis defineInfix(Op,Pr-1,Pr,Pr-1,MinPrior,Ops)
+  fun checkForOperators(isUnary(_,"\#",Meta),Ops) is valof{
+        switch Meta in {
+          case isTernary(Lc,"infix",Lf,Md,Rt) do {
+            if Lf matches asString(_,Op) then{
+              if Md matches asInteger(_,Pr) then {
+                if Rt matches asInteger(_,MinPrior) then
+                  valis defineInfix(Op,Pr-1,Pr,Pr-1,MinPrior,Ops)
+                else
+                  reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+              }
               else
-                reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+                reportError("expecting an integer, not $Md",list of [locOf(Md)])
             }
             else
-              reportError("expecting an integer, not $Md",list of [locOf(Md)])
+              reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
-          valis Ops
-        }
-        else if isBinary(Meta,"infix") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis defineInfix(Op,Pr-1,Pr,Pr-1,0,Ops)
-            else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
-          }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isTernary(Meta,"right") has value (Lf,Md,Rt) then {
-          if Lf matches asString(_,Op) then{
-            if Md matches asInteger(_,Pr) then {
-              if Rt matches asInteger(_,MinPrior) then
-                valis defineInfix(Op,Pr-1,Pr,Pr,MinPrior,Ops)
+          case isBinary(_,"infix",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis defineInfix(Op,Pr-1,Pr,Pr-1,0,Ops)
               else
-                reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+                reportError("expecting an integer, not $R",list of [locOf(R)])
             }
             else
-              reportError("expecting an integer, not $Md",list of [locOf(Md)])
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
-          valis Ops
-        }
-        else if isBinary(Meta,"right") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis defineInfix(Op,Pr-1,Pr,Pr,0,Ops)
-            else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
-          }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isTernary(Meta,"left") has value (Lf,Md,Rt) then {
-          if Lf matches asString(_,Op) then{
-            if Md matches asInteger(_,Pr) then {
-              if Rt matches asInteger(_,MinPrior) then
-                valis defineInfix(Op,Pr,Pr,Pr-1,MinPrior,Ops)
+          case isTernary(_,"right",Lf,Md,Rt) do {
+            if Lf matches asString(_,Op) then{
+              if Md matches asInteger(_,Pr) then {
+                if Rt matches asInteger(_,MinPrior) then
+                  valis defineInfix(Op,Pr-1,Pr,Pr,MinPrior,Ops)
+                else
+                  reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+              }
               else
-                reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+                reportError("expecting an integer, not $Md",list of [locOf(Md)])
             }
             else
-              reportError("expecting an integer, not $Md",list of [locOf(Md)])
+              reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
-          valis Ops
-        }
-        else if isBinary(Meta,"left") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis defineInfix(Op,Pr,Pr,Pr-1,0,Ops)
-            else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
-          }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isTernary(Meta,"prefix") has value (Lf,Md,Rt) then {
-          if Lf matches asString(_,Op) then{
-            if Md matches asInteger(_,Pr) then {
-              if Rt matches asInteger(_,MinPrior) then
-                valis definePrefix(Op,Pr,Pr-1,MinPrior,Ops)
+          case isBinary(_,"right",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis defineInfix(Op,Pr-1,Pr,Pr,0,Ops)
               else
-                reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+                reportError("expecting an integer, not $R",list of [locOf(R)])
             }
             else
-              reportError("expecting an integer, not $Md",list of [locOf(Md)])
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
-          valis Ops
-        }
-        else if isBinary(Meta,"prefix") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis definePrefix(Op,Pr,Pr-1,0,Ops)
-            else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
-          }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isBinary(Meta,"prefixAssoc") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis definePrefix(Op,Pr,Pr,0,Ops)
-            else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
-          }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isTernary(Meta,"postfix") has value (Lf,Md,Rt) then {
-          if Lf matches asString(_,Op) then{
-            if Md matches asInteger(_,Pr) then {
-              if Rt matches asInteger(_,MinPrior) then
-                valis definePostfix(Op,Pr-1,Pr,MinPrior,Ops)
+          case isTernary(_,"left",Lf,Md,Rt) do {
+            if Lf matches asString(_,Op) then{
+              if Md matches asInteger(_,Pr) then {
+                if Rt matches asInteger(_,MinPrior) then
+                  valis defineInfix(Op,Pr,Pr,Pr-1,MinPrior,Ops)
+                else
+                  reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+              }
               else
-                reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+                reportError("expecting an integer, not $Md",list of [locOf(Md)])
             }
             else
-              reportError("expecting an integer, not $Md",list of [locOf(Md)])
+              reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
-          valis Ops
-        }
-        else if isBinary(Meta,"postfix") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis definePrefix(Op,Pr-1,Pr,0,Ops)
+          case isBinary(_,"left",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis defineInfix(Op,Pr,Pr,Pr-1,0,Ops)
+              else
+                reportError("expecting an integer, not $R",list of [locOf(R)])
+            }
             else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isBinary(Meta,"postfixAssoc") has value (L,R) then {
-          if L matches asString(_,Op) then{
-            if R matches asInteger(_,Pr) then
-              valis definePostfix(Op,Pr,Pr,0,Ops)
+          case isTernary(_,"prefix",Lf,Md,Rt) do {
+            if Lf matches asString(_,Op) then{
+              if Md matches asInteger(_,Pr) then {
+                if Rt matches asInteger(_,MinPrior) then
+                  valis definePrefix(Op,Pr,Pr-1,MinPrior,Ops)
+                else
+                  reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+              }
+              else
+                reportError("expecting an integer, not $Md",list of [locOf(Md)])
+            }
             else
-              reportError("expecting an integer, not $R",list of [locOf(R)])
+              reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
+            valis Ops
           }
-          else
-            reportError("expecting a operator name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else if isUnary(Meta,"token") has value (T) then {
-          if T matches asString(_,Op) then
-            valis defineToken(Op,Ops)
-          else
-            reportError("expecting a operator name (string), not $T",list of [locOf(T)])
-          valis Ops
-        }
-        else if isQuad(Meta,"pair") has value (L,M1,M2,R) then {
-          if L matches asString(_,Lf) then {
-            if M1 matches asString(_,Rt) then {
-              if M2 matches asString(_,Op) then {
+          case isBinary(_,"prefix",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis definePrefix(Op,Pr,Pr-1,0,Ops)
+              else
+                reportError("expecting an integer, not $R",list of [locOf(R)])
+            }
+            else
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
+          }
+          case isBinary(_,"prefixAssoc",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis definePrefix(Op,Pr,Pr,0,Ops)
+              else
+                reportError("expecting an integer, not $R",list of [locOf(R)])
+            }
+            else
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
+          }
+          case isTernary(_,"postfix",Lf,Md,Rt) do {
+            if Lf matches asString(_,Op) then{
+              if Md matches asInteger(_,Pr) then {
+                if Rt matches asInteger(_,MinPrior) then
+                  valis definePostfix(Op,Pr-1,Pr,MinPrior,Ops)
+                else
+                  reportError("expecting an integer, not $Rt",list of [locOf(Rt)])
+              }
+              else
+                reportError("expecting an integer, not $Md",list of [locOf(Md)])
+            }
+            else
+              reportError("expecting a operator name (string), not $Lf",list of [locOf(Lf)])
+            valis Ops
+          }
+          case isBinary(_,"postfix",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis definePrefix(Op,Pr-1,Pr,0,Ops)
+              else
+                reportError("expecting an integer, not $R",list of [locOf(R)])
+            }
+            else
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
+          }
+          case isBinary(_,"postfixAssoc",L,R) do {
+            if L matches asString(_,Op) then{
+              if R matches asInteger(_,Pr) then
+                valis definePostfix(Op,Pr,Pr,0,Ops)
+              else
+                reportError("expecting an integer, not $R",list of [locOf(R)])
+            }
+            else
+              reportError("expecting a operator name (string), not $L",list of [locOf(L)])
+            valis Ops
+          }
+          case isUnary(_,"token",T) do {
+            if T matches asString(_,Op) then
+              valis defineToken(Op,Ops)
+            else
+              reportError("expecting a operator name (string), not $T",list of [locOf(T)])
+            valis Ops
+          }
+          case isQuad(_,"pair",L,M1,M2,R) do {
+            if L matches asString(_,Lf) then {
+              if M1 matches asString(_,Rt) then {
+                if M2 matches asString(_,Op) then {
+                  if R matches asInteger(_,Pr) then {
+                    valis defineBktPair(Lf,Rt,Lf++Rt,Op,Pr,Ops)
+                  } else
+                    reportError("expecting a priority (integer), not $R",list of [locOf(R)])
+                } else
+                  reportError("expecting a op name (string), not $M2",list of [locOf(M2)])
+              } else
+                reportError("expecting a right bracket name (string), not $M1",list of [locOf(M1)])
+            } else
+              reportError("expecting a left bracket name (string), not $L",list of [locOf(L)])
+            valis Ops
+          }
+          case isTernary(_,"pair",L,M,R) do {
+            if L matches asString(_,Lf) then {
+              if M matches asString(_,Rt) then {
                 if R matches asInteger(_,Pr) then {
-                  valis defineBktPair(Lf,Rt,Lf++Rt,Op,Pr,Ops)
+                  valis defineBktPair(Lf,Rt,Lf++Rt,"",Pr,Ops)
                 } else
                   reportError("expecting a priority (integer), not $R",list of [locOf(R)])
               } else
-                reportError("expecting a op name (string), not $M2",list of [locOf(M2)])
+                reportError("expecting a right bracket name (string), not $M",list of [locOf(M)])
             } else
-              reportError("expecting a right bracket name (string), not $M1",list of [locOf(M1)])
-          } else
-            reportError("expecting a left bracket name (string), not $L",list of [locOf(L)])
-          valis Ops
+              reportError("expecting a left bracket name (string), not $L",list of [locOf(L)])
+            valis Ops
+          }
+          case _ default do 
+            valis Ops
         }
-        else if isTernary(Meta,"pair") has value (L,M,R) then {
-          if L matches asString(_,Lf) then {
-            if M matches asString(_,Rt) then {
-              if R matches asInteger(_,Pr) then {
-                valis defineBktPair(Lf,Rt,Lf++Rt,"",Pr,Ops)
-              } else
-                reportError("expecting a priority (integer), not $R",list of [locOf(R)])
-            } else
-              reportError("expecting a right bracket name (string), not $M",list of [locOf(M)])
-          } else
-            reportError("expecting a left bracket name (string), not $L",list of [locOf(L)])
-          valis Ops
-        }
-        else
-          valis Ops
       }
    |  checkForOperators(T,Ops) default is Ops
 
@@ -328,9 +330,9 @@ opgrammar is package{
           switch nxtTok(TToks,Ops) in {
             case (idTok(")",tlLc),RToks) do valis (RToks,tple(mergeLocation(stLc,tlLc),tupleize(T)),tlLc);
             case (HdTk,RToks) default do {
-              def tlLc is tokenLoc(HdTk)
+              def tlLc is locOf(HdTk)
               reportError("expecting a closing paren, not $HdTk",list of [tlLc])
-              valis (RToks,tple(mergeLocation(stLc,tokenLoc(HdTk)),tupleize(T)),tlLc)
+              valis (RToks,tple(mergeLocation(stLc,locOf(HdTk)),tupleize(T)),tlLc)
             }
           }
         }
@@ -376,7 +378,7 @@ opgrammar is package{
                   (TToks,asTuple(mergeLocation(stLc,tlLc),Bkt.op,list of [Els..,T]),tlLc);
             case (idTok(",",_),TToks) do valis parseBkt(TToks,list of [Els..,T]);
             case (HdTk,TToks) default do {
-              reportError("expecting a ',' or '$Rgt', not $HdTk, '(' at $stLc",list of [tokenLoc(HdTk)])
+              reportError("expecting a ',' or '$Rgt', not $HdTk, '(' at $stLc",list of [locOf(HdTk)])
               valis parseBkt(TToks,list of [Els..,T])
             }
           }

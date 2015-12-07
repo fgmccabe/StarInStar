@@ -24,4 +24,8 @@ location is package{
 
   fun sameLine(someWhere{lineCount=Lc1},someWhere{lineCount=Lc2}) is Lc1=Lc2
    |  sameLine(_,_) default is false
+
+  contract hasLocation over t is {
+    locOf has type (t)=>srcLoc;
+  }
 }
