@@ -8,20 +8,21 @@ subsume is package{
 
   private type reset is resetVar(iType,integer)
 
-  subsume has type (dict) => (iType,iType)=>good of ((),string)
-  fun subsume(D) is let{
+  subsume has type (dict,srcLoc) => (iType,iType)=>good of ()
+  fun subsume(D,Lc) is let{
     var resets := list of []
     var resetLevel := 0
 
-    sub has type (iType,iType,iType,iType)=>good of ((),string)
+    sub has type (iType,iType,iType,iType)=>good of ()
     fun sub(t1,v1,t2,v2) is switch (v1,v2) in {
+      case (iBvar(Id),iBvar(Id)) is good(())
       case (iTvar{},_) is bindVar(v1,v2,sub)
       case (_,iTvar{}) is bindVar(v2,v1,super);
       case (iKvar(Nm,Or),iKvar(Nm,Or)) is good(());
       case (iType(Nm),iType(Nm)) is good(());
       case (iTuple(L1),iTuple(L2)) is size(L1)=size(L2) ?
           subList(L1,L2,sub) 
-        : noGood("arity of $t1 different to arity of $t2");
+        : noGood("arity of $t1 different to arity of $t2",Lc);
       case (iFace(M1,T1),iFace(M2,T2)) is subFace(M1,T1,M2,T2);
       case (iFnTp(A1,R1),iFnTp(A2,R2)) is both(checkSub(A2,A1),()=>checkSub(R1,R2));
       case (iPtTp(A1,R1),iPtTp(A2,R2)) is both(checkSub(A1,A2),()=>checkSub(R2,R1));
@@ -51,7 +52,7 @@ subsume is package{
       	valis Rslt
       };
       case (_,_) default is 
-      	noGood("$t1 not consistent with $t2")
+      	noGood("$t1 not consistent with $t2",Lc)
     }
 
     fun super(t1,v1,t2,v2) is sub(t2,v2,t1,v1)
@@ -67,7 +68,7 @@ subsume is package{
 
     fun subFace(M1,T1,M2,T2) is valof{
       if size(M1)>size(M2) then
-      	valis noGood("$M2 has too few elements, compared to $M1")
+      	valis noGood("$M2 has too few elements, compared to $M1",Lc)
       else{
       	for K->V1 in M1 do {
       	  if M2[K] has value V2 then {
@@ -75,7 +76,7 @@ subsume is package{
       	    if not (R matches good(_)) then
       	      valis R
       	  } else
-      	    valis noGood("$M2 does not contain entry for $K")
+      	    valis noGood("$M2 does not contain entry for $K",Lc)
       	}
       	for K->V1 in T1 do{
       	  if T2[K] has value V2 then{
@@ -83,16 +84,18 @@ subsume is package{
       	    if not (R matches good(_)) then
       	      valis R
       	  } else
-      	    valis noGood("$T2 does not contain entry for $K")
+      	    valis noGood("$T2 does not contain entry for $K",Lc)
       	}
       	valis good(())
       }
     }
 
     fun bindVar(V,T,S) is valof{
-      if occursIn(V.id,T) then
-      	valis noGood("occurs check")
-      else{
+      if not T matches iTvar{} and occursIn(V.id,T) then
+      	valis noGood("occurs check",Lc)
+      else if T matches iTvar{id = Tid} and Tid = V.id then
+        valis good(())
+      else {
       	resets := list of [resetVar(V,resetLevel),..resets]
       	resetLevel := resetLevel+1
       	V.value := T
@@ -106,45 +109,45 @@ subsume is package{
     fun checkConstraints(list of [],_,_) is good(())
      |  checkConstraints(list of [C,..L],T,S) is 
           both((switch C in {
-      	    case iContractCon(Cn) is checkContract(Cn,S)
-      	    case iFieldCon(Tp,Fld,FldTp) is checkFieldName(deRef(Tp),Fld,FldTp,S)
+      	    case isOver(Cn) is checkContract(Cn,S)
+      	    case hasField(Tp,Fld,FldTp) is checkFieldName(deRef(Tp),Fld,FldTp,S)
       	    case iTypeCon(_,Fld,FldTp) is good(())
       	    case hasKind(xT,K) is checkKind(deRef(xT),K)
       	    case instanceOf(iTp,jTp) is S(iTp,deRef(iTp),jTp,deRef(jTp))
       	    case isTuple(iTuple(_)) is good(())
-            case isTuple(xT) is noGood("$xT is not a tuple type")
+            case isTuple(xT) is noGood("$xT is not a tuple type",Lc)
       	  }),()=>checkConstraints(L,T,S))
 
     fun checkContract(Cn,S) where implementationName(Cn) has value Nm is valof{
           if findVar(D,Nm) has value contractImplementation {implType = iCn} then
             valis subContract(Cn,iCn,S)
           else
-            valis noGood("$Cn not known to be implemented")
+            valis noGood("$Cn not known to be implemented",Lc)
         }
      |  checkContract(_,_) is good(()) -- will be checked eventually
 
-    fun subContract(iContract{name=Nm;argTypes=LA;depTypes=LD},iContract{name=Nm;argTypes=RA;depTypes=RD},S) is
+    fun subContract(iContract(Nm,LA,LD),iContract(Nm,RA,RD),S) is
           both(subList(LA,RA,S),()=>subList(LD,RD,S))
-     |  subContract(L,R,_) is noGood("$L not consistent with $R")
+     |  subContract(L,R,_) is noGood("$L not consistent with $R",Lc)
 
     fun checkFieldName(iType(Nm),Field,FieldTp,S) where findType(D,Nm) has value Cons is
           typeOfField(D,Cons,Field) has value Ftp ?
             S(Ftp,deRef(Ftp),FieldTp,deRef(FieldTp)) :
-            noGood("$Nm does not have a field $Field")
-     |  checkFieldName(Tp,Field,FieldTp,S) default is noGood("$Tp not known to have field $Field")
+            noGood("$Nm does not have a field $Field",Lc)
+     |  checkFieldName(Tp,Field,FieldTp,S) default is noGood("$Tp not known to have field $Field",Lc)
 
     fun checkKind(iType(Nm),K) where findType(D,Nm) has value Desc is 
       switch Desc in {
         case typeIs(iT) is checkForm(evidence(iT),K)
         case algebraic(iT,_) is checkForm(evidence(iT),K)
         case typeAlias(iF) where iF(iType(Nm)) has value aTp is checkKind(aTp,K)
-        case _ default is noGood("$Nm not a $K type")
+        case _ default is noGood("$Nm not a $K type",Lc)
       }
 
     fun checkForm(iType(_),kType) is good(())
      |  checkForm(_,kUnknown) is good(())
      |  checkForm(iTpExp(_,iTuple(L)),kTypeFun(Ix)) where size(L)=Ix is good(())
-     |  checkForm(Tp,K) default is noGood("$Tp is not a $K type")
+     |  checkForm(Tp,K) default is noGood("$Tp is not a $K type",Lc)
 
     fun mergeConstraints(T,list of [],_) is good(())
      |  mergeConstraints(T,list of [C,..L],S) is both(mergeConstraint(T,C,S),()=>mergeConstraints(T,L,S))
@@ -170,9 +173,9 @@ subsume is package{
     fun checkSub(S,T) is valof{
       switch sub(S,deRef(S),T,deRef(T)) in {
       	case good(_) do valis good(())
-      	case noGood(R) default do {
+      	case noGood(R,L) default do {
       	  resetToMark(0)
-      	  valis noGood(R)
+      	  valis noGood(R,L)
       	}
       }
     }

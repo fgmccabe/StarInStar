@@ -1,7 +1,7 @@
 catalog{
   content is hash{
     "ast" -> "../ast.star";
-    "good"-> "../starlib/good.star";
+    "good"-> "../good.star";
     "canonical"-> "../canonical.star";
     "dict"-> "../dict.star";
     "errors" -> "../errors.star";
@@ -12,11 +12,14 @@ catalog{
     "parseType"-> "../parseType.star";
     "stream"-> "../stream.star";
     "types"-> "../types.star";
+    "trace" -> "../starlib/trace.star";
     "redblack" -> "../starlib/redblack.star";
     "binomial" -> "../starlib/binomial.star";
     "pairHeap" -> "../starlib/pairHeap.star";
     "check" -> "../check.star";
     "topsort" -> "../topsort.star";
     "dependencies" -> "../dependencies.star";
+    "subsume" -> "../subsume.star";
+    "stdTypes" -> "../stdTypes.star"
   }
 }

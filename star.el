@@ -715,7 +715,6 @@
 	   "else"			; control
 	   "extend"			; CRUD control
 
-	   "fn"                         ; lambda
 	   "for all"			; type
 	   "for"			; control
 	   "from"			; control

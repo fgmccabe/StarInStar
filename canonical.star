@@ -5,15 +5,15 @@ canonical is package{
 
   -- define the typed term structure. This is the main workhorse structure for representing Star programs
 
-
   -- A definition statement
   type canonStmt is canonDef(srcLoc,cPtn,cExp)
                  or canonVar(srcLoc,cPtn,cExp)
-                 or canonType(srcLoc)
+                 or canonType(srcLoc,iType,cType)
 
   implementation hasLocation over canonStmt is {
     fun locOf(canonDef(Lc,_,_)) is Lc
-     |  locOf(canonType(Lc)) is Lc
+     |  locOf(canonType(Lc,_,_)) is Lc
+     |  locOf(canonVar(Lc,_,_)) is Lc
   }
 
   implementation pPrint over canonStmt is {
@@ -29,8 +29,9 @@ canonical is package{
 
   private
   fun showStmt(S) is switch(S) in {
-    case canonDef(_,Vr,Vl) is ppSequence(0,[ppStr("def"),ppSpace,showPtn(Vr,1199),ppSpace,ppStr("is"),ppSpace,showExp(Vl,1199)])
-    case canonVar(_,Vr,Vl) is ppSequence(0,[ppStr("var"),ppSpace,showPtn(Vr,1199),ppSpace,ppStr(":="),ppSpace,showExp(Vl,1199)])
+    case canonDef(_,Vr,Vl) is ppSequence(0,[ppStr("def"),ppSpace,showPtn(Vr,1199),ppStr(":"),ppDisp(Vr.tipe),ppSpace,ppStr("is"),ppSpace,showExp(Vl,1199)])
+    case canonVar(_,Vr,Vl) is ppSequence(0,[ppStr("var"),ppSpace,showPtn(Vr,1199),ppStr(":"),ppDisp(Vr.tipe),ppSpace,ppStr(":="),ppSpace,showExp(Vl,1199)])
+    case canonType(_,Tp,Tdef) is ppSequence(0,[ppStr("type"),ppSpace,dispTypeDef(Tdef)])
   }
 
   -- Canonical expression term
@@ -47,7 +48,7 @@ canonical is package{
     or cFace{loc has type srcLoc; tipe has type iType; values has type dictionary of (string,cExp);types has type dictionary of (string,iType)}
     or cField{loc has type srcLoc; tipe has type iType; record has type cExp; field has type string}
     or cApply{loc has type srcLoc; tipe has type iType; op has type cExp; arg has type cExp}
-    or cSwitch{loc has type srcLoc; tipe has type iType; sel has type cExp; cases has type list of ((cPtn,cExp))}
+    or cSwitch{loc has type srcLoc; tipe has type iType; sel has type cExp; cases has type list of ((cPtn,boolean,cExp))}
     or cLet{loc has type srcLoc;tipe has type iType;env has type list of canonStmt;bnd has type cExp}
     or cLambda{loc has type srcLoc; tipe has type iType; lhs has type cPtn; rhs has type cExp}
     or cMemo{loc has type srcLoc; tipe has type iType; value has type cExp}
@@ -94,11 +95,12 @@ canonical is package{
 
   private
   fun showCases([],_) is []
-   |  showCases([(P,E)],S) is [S(P,E)]
-   |  showCases([(P,E),..R],S) is [S(P,E),ppStr(";"),ppNl,..showCases(R,S)]
+   |  showCases([(P,D,E)],S) is [S(P,D,E)]
+   |  showCases([(P,D,E),..R],S) is [S(P,D,E),ppStr(";"),ppNl,..showCases(R,S)]
 
   private
-  fun showExpCase(P,E) is ppSequence(0,[ppStr("case"),ppSpace,showPtn(P,1290),ppSpace,ppStr("is"),ppSpace,showExp(E,1289)])
+  fun showExpCase(P,false,E) is ppSequence(0,[ppStr("case"),ppSpace,showPtn(P,1290),ppSpace,ppStr("is"),ppSpace,showExp(E,1289)])
+   |  showExpCase(P,true,E) is ppSequence(0,[ppStr("case"),ppSpace,showPtn(P,1290),ppSpace,ppStr("default"),ppSpace,ppStr("is"),ppSpace,showExp(E,1289)])
 
   -- Canonical pattern term
   type cPtn is 
@@ -119,6 +121,8 @@ canonical is package{
   } using {
     fun shw(E) is ppSequence(0,[showPtn(E,2000),ppSpace,ppStr(":"),ppSpace,showType(E.tipe,2000),ppStr("@"),ppDisp(E.loc)])
   }
+
+  fun emptyPtnTuple(Lc) is pTuple{loc=Lc;tipe = iTuple([]); elements = []}
 
   private
   fun showPtn(P,Pr) is switch P in {
@@ -177,6 +181,17 @@ canonical is package{
     case cExp{exp=E} is showExp(E,Pr)
   }
 
+  -- Type definition
+  type cType is 
+    cAlgebraic(Lc,dictionary of (string,iType)) -- algebraic type has a set of constructors
+
+  private
+  fun dispTypeDef(cAlgebraic(_,Cons)) is ppSequence(0,[ppStr("is"),ppSpace,..interleave(cons of {all ppDisp(X) where _->X in Cons},ppStr("or"))])
+
+  implementation pPrint over cType is {
+    ppDisp = dispTypeDef
+  }
+  
   private
   fun interSemi(0,_) is ppSpace
    |  interSemi(_,0) is ppSpace

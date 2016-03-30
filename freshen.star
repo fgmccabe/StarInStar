@@ -11,12 +11,7 @@ freshen is package{
             case iTvar{value=V} is V=unTyped?Tp:rewrite(V)
           	case iKvar(_,_) is Tp
           	case iBvar(Nm) where Mp[Nm] has value Kt is Kt
-/*
-            case iBvar(Nm) is valof{
-              logMsg(info,"Cannot handle bound var $Tp from bounds $Mp")
-              valis Tp
-            }
-*/          	case iType(_) is Tp
+          	case iType(_) is Tp
           	case iFace(Flds,Tps) is iFace(frMap(Flds),frMap(Tps))
           	case iTuple(Flds) is iTuple(map(rewrite,Flds))
             case iFnTp(A,R) is iFnTp(rewrite(A),rewrite(R))
@@ -30,6 +25,7 @@ freshen is package{
           	case iExists(Nm,bTp) is let{
           	       def xF is frshnUp(Mp[without Nm])
           	     } in iExists(Nm,xF(bTp))
+            case iContract(Nm,At,Dt) is iContract(Nm,map(rewrite,At),map(rewrite,Dt))
           	case iConstrained(A,X) is valof{
                 frCon(X)
                 valis rewrite(A)
@@ -37,15 +33,15 @@ freshen is package{
           	case unTyped is unTyped
           }
 
-          prc frCon(iContractCon(iContract{name=Cx; argTypes=Ax; depTypes=Dx})) do {
+          prc frCon(isOver(iContract(Cx,Ax,Dx))) do {
               	def nAx is map(rewrite,Ax)
-              	def nI is iContractCon(iContract{name=Cx;argTypes=nAx;depTypes=map(rewrite,Dx)})
+              	def nI is isOver(iContract(Cx,nAx,map(rewrite,Dx)))
               	for A in nAx do
               	  setConstraint(A,nI)
               }
-           |  frCon(iFieldCon(rTp,Nm,fTp)) do {
+           |  frCon(hasField(rTp,Nm,fTp)) do {
               	def nAx is rewrite(rTp)
-              	setConstraint(nAx,iFieldCon(nAx,Nm,rewrite(fTp)))
+              	setConstraint(nAx,hasField(nAx,Nm,rewrite(fTp)))
               }
            |  frCon(iTypeCon(rTp,Nm,fTp)) do {
               	def nAx is rewrite(rTp)
@@ -102,7 +98,6 @@ freshen is package{
       constraints := []
     }]
 
-  private
   fun skolemize(Nm,Mp) is
     valof{
       def UVars is list of { all V where (V matching iTvar{}) in Mp }
@@ -117,6 +112,10 @@ freshen is package{
 
   fun freshen(Tp) where freshenForUse(Tp) matches (fTp,_) is fTp
   fun evidence(Tp) where freshenForEvidence(Tp) matches (fTp,_) is fTp
+
+  fun stripQuants(iExists(bV,bT),M,U,E) is stripQuants(bT,E(bV,M),U,E)
+   |  stripQuants(iUniv(bV,bT),M,U,E) is stripQuants(bT,U(bV,M),U,E)
+   |  stripQuants(T,M,_,E) is (T,M)
 
   fun typeVar() is valof{
     def I is nextId();
@@ -141,6 +140,7 @@ freshen is package{
       case iUniv(Nm,bTp) is iUniv(Nm,genType(bTp))
       case iExists(Nm,bTp) is iExists(Nm,genType(bTp))
       case iConstrained(A,X) is iConstrained(genType(A),genConstraint(X))
+      case iContract(Nm,A,D) is iContract(Nm,map(genType,A),map(genType,D))
       case unTyped is unTyped
     }
 
@@ -156,9 +156,9 @@ freshen is package{
         valis boundVar
       }
 
-    fun genConstraint(iContractCon(iContract{name=conName;argTypes=argTypes;depTypes=depTypes})) is
-          iContractCon(iContract{name=conName;argTypes=map(genType,argTypes);depTypes=map(genType,depTypes)})
-     |  genConstraint(iFieldCon(Tp,Name,fldTp)) is iFieldCon(genType(Tp),Name,genType(fldTp))
+    fun genConstraint(isOver(iContract(conName,argTypes,depTypes))) is
+          isOver(iContract(conName,map(genType,argTypes),map(genType,depTypes)))
+     |  genConstraint(hasField(Tp,Name,fldTp)) is hasField(genType(Tp),Name,genType(fldTp))
      |  genConstraint(iFieldKind(Tp,N,K)) is iFieldKind(genType(Tp),N,K)
      |  genConstraint(iTypeCon(Tp,N,fldTp)) is iTypeCon(genType(Tp),N,genType(fldTp))
      |  genConstraint(hasKind(Tp,K)) is hasKind(genType(Tp),K)

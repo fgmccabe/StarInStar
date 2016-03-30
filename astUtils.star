@@ -5,6 +5,25 @@ astUtils is package{
   private import ast
   private import good
 
+
+  private import lexer;
+  private import operators;
+  private import opgrammar;
+
+  fun parseFile(File) is valof{
+    def tokens is tokenize(File)
+    def (Rest,Pr,T) is term(tokens,2000,standardOps);
+
+    valis T
+  }
+
+  fun parseString(Text) is valof {
+    def tokens is stringTokens(Text,someWhere{lineCount = 0; lineOffset=0; charCount = 0; length = size(Text)})
+
+    def (_,_,T) is term(tokens,2000,standardOps)
+    valis T
+  }
+
   ptn isFunDef(Lc,Eqns) from asApply(Lc,asName(_,"fun"),asTuple(_,_,list of [Eqns]))
 
   ptn isLambdaAst(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"=>"),asTuple(_,_,list of [Lhs,Rhs]))
@@ -43,7 +62,11 @@ astUtils is package{
 
   ptn isTypeDef(Lc,Rl) from asApply(Lc,asName(_,"type"),asTuple(_,_,list of [Rl]))
 
-  ptn isTypeAssignment(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"type"),asTuple(_,"()",[asApply(_,asName(_,"="),asTuple(_,_,[Lhs,Rhs]))]))
+  ptn isTypeAliasDef(Lc,Lhs,Rhs) from isTypeDef(Lc,isEquation(_,Lhs,isUnary(_,"alias of",Rhs)))
+
+  ptn isAlgebraicTypeDef(Lc,Lhs,Rhs) from isTypeDef(Lc,isEquation(_,Lhs,Rhs))
+
+  ptn isTypeAssignment(Lc,Nm,Rhs) from asApply(Lc,asName(_,"type"),asTuple(_,"()",[asApply(_,asName(_,"="),asTuple(_,_,[isIden(_,Nm),Rhs]))]))
 
   ptn isTypeAnnotation(Lc,Lhs,Tp) from asApply(Lc,asName(_,"has type"),asTuple(_,"()",[Lhs,Tp]))
 
@@ -59,7 +82,7 @@ astUtils is package{
   ptn isIden(Lc,Nm) from asName(Lc,Nm)
    |  isIden(Lc,Nm) from asTuple(Lc,"()",list of [asName(_,Nm)])
 
-  ptn isLblRecord(Lc,Op,Content) from asApply(Lc,Op,asTuple(_,"{}",Content))
+  ptn isLabeledRecord(Lc,Op,Content) from asApply(Lc,Op,asTuple(_,"{}",Content))
 
   ptn isFieldAccess(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"."),asTuple(_,_,list of [Lhs,Rhs]))
 
@@ -69,6 +92,8 @@ astUtils is package{
 
   ptn isUniversalQ(Lc,astFold(pickVar,set of [],",",Vrs),Tp) from
       asApply(Lc,asName(_,"such that"),asTuple(_,"()",list of [asApply(_,asName(_,"for all"),Vrs),Tp]))
+
+  ptn isWherePtn(Lc,Ptn,Cond) from isBinary(Lc,"where",Ptn,Cond)
 
   private
   fun pickVar(Vars,isIden(_,V)) is add_element(Vars,V)
@@ -108,30 +133,30 @@ astUtils is package{
           compareResult(checkRules(L),checkRules(R))
      |  checkRules(T) is F(T)
 
-    fun compareResult(L matching noGood(_),_) is L
-     |  compareResult(_,R matching noGood(_)) is R
-     |  compareResult(good(L),good(R)) is L=R ? good(L) : noGood(("$L not same as $R",locOf(Trm)))
+    fun compareResult(L matching noGood(_,_),_) is L
+     |  compareResult(_,R matching noGood(_,_)) is R
+     |  compareResult(good(L),good(R)) is L=R ? good(L) : noGood("$L not same as $R",locOf(Trm))
 
   } in checkRules(Trm)
 
   private
   fun equationName(isEquation(_,Lhs,Rhs)) is headName(Lhs)
-   |  equationName(E) is noGood(("$E is not a valid equation",locOf(E)))
+   |  equationName(E) is noGood("$E is not a valid equation",locOf(E))
 
   private
   fun actionRuleName(isActionRule(_,Lhs,Rhs)) is headName(Lhs)
-   |  actionRuleName(E) is noGood(("$E is not a valid action rule",locOf(E)))
+   |  actionRuleName(E) is noGood("$E is not a valid action rule",locOf(E))
 
   private
   fun pttrnName(isPttrnRule(_,Lhs,Rhs)) is headName(Lhs)
-   |  pttrnName(E) is noGood(("$E is not a valid pattern rule",locOf(E)))
+   |  pttrnName(E) is noGood("$E is not a valid pattern rule",locOf(E))
 
   private
   fun headName(asApply(Lc,asName(_,"where"),asTuple(_,_,list of [Lhs,Rhs]))) is headName(Lhs)
    |  headName(asApply(Lc,asName(_,"default"),asTuple(_,_,list of [Lhs]))) is headName(Lhs)
    |  headName(isIden(_,Nm)) is good(Nm)
    |  headName(asApply(_,asName(_,Nm),_)) is good(Nm)
-   |  headName(T) default is noGood(("cannot determine name from $T",locOf(T)))
+   |  headName(T) default is noGood("cannot determine name from $T",locOf(T))
 
   private
   fun typeName(asApply(_,asName(_,"where"),asTuple(_,_,[Lhs,Rhs]))) is typeName(Lhs)
@@ -139,7 +164,7 @@ astUtils is package{
    |  typeName(asApply(_,asName(_,"of"),asTuple(_,_,[L,_]))) is typeName(L)
    |  typeName(asApply(_,asName(_,"such that"),asTuple(_,_,[_,R]))) is typeName(R)
    |  typeName(isIden(_,Nm)) is good(Nm)
-   |  typeName(T) default is noGood(("cannot determine name from $T",locOf(T)))
+   |  typeName(T) default is noGood("cannot determine name from $T",locOf(T))
 
   fun astFold(Fn,Init,Op,Trm) is let{
     fun termFold(St,asApply(_,asName(_,O where O=Op),asTuple(_,"()",[L,R]))) is termFold(termFold(St,L),R)

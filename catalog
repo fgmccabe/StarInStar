@@ -3,7 +3,7 @@ catalog{
     "location" -> "location.star";
     "maybe" -> "maybe.star";
     "binomial" -> "starlib/binomial.star";
-    "good" -> "starlib/good.star";
+    "good" -> "good.star";
     "visitor" -> "starlib/visitor.star";
     "redset"-> "starlib/redset.star";
     "redblack"-> "starlib/redblack.star";
@@ -31,5 +31,6 @@ catalog{
     "contracts" -> "contracts.star";
     "astUtils" -> "astUtils.star";
     "topsort" -> "topsort.star";
+    "stdTypes" -> "stdTypes.star";
   }
 }

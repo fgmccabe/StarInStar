@@ -28,4 +28,8 @@ location is package{
   contract hasLocation over t is {
     locOf has type (t)=>srcLoc;
   }
+
+  implementation coercion over (astLocation,srcLoc) is {
+    fun coerce(L) is someWhere{ lineCount = L.lineCount; lineOffset = L.lineOffset; charCount = L.charCount; length = L.length}
+  }
 }

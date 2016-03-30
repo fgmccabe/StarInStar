@@ -23,10 +23,11 @@ types is package{
     iUniv(string,iType) or			-- universally quantified type
     iExists(string,iType) or			-- existentially quantifier type
     iConstrained(iType,iConstraint) or		-- constrained type
-    unTyped;					-- no known type
+    iContract(string,list of iType,list of iType) or -- contract type
+    unTyped					-- no known type
 
-  type iConstraint is iContractCon(iContract) or -- contract constraint
-    iFieldCon(iType,string,iType) or -- field constraint. The first argument is the constrained type
+  type iConstraint is isOver(iType) or -- contract constraint
+    hasField(iType,string,iType) or -- field constraint. The first argument is the constrained type
     iFieldKind(iType,string,kKind) or -- type field kind constraint. 
     iTypeCon(iType,string,iType) or -- type field constraint. Existential constraint
     hasKind(iType,kKind) or	    -- has kind constrain
@@ -35,12 +36,6 @@ types is package{
 
   implementation pPrint over iType is {
     fun ppDisp(T) is showType(T,2000)
-  }
-
-  type iContract is iContract{
-    name has type string
-    argTypes has type list of iType
-    depTypes has type list of iType
   }
 
   fun showType(Tp matching iTvar{},Pr) is
@@ -94,21 +89,38 @@ types is package{
           Pr<1005)
    |  showType(iConstrained(T,C),Pr) is parenthesize(
         showConstrained(iConstrained(T,C)),Pr<940)
+   |  showType(iContract(N,A,[]),Pr) is parenthesize(
+        ppSequence(0,cons of [ppStr(N), ppSpace,ppStr("over"), ppSpace, 
+          showTypeSequence(A)]),
+          Pr<900)
+   |  showType(iContract(N,A,D),Pr) is parenthesize(
+        ppSequence(0,cons of [ppStr(N), ppSpace,ppStr("over"), ppSpace, 
+          showTypeSequence(A),
+          ppSpace,
+          ppStr("determines"),
+          ppSpace,
+          showTypeSequence(D)]),
+          Pr<900)
+   |  showType(unTyped,_) is ppStr("<untyped>")
 
   private
   fun showTypeList(L) is ppSequence(0,
       cons of [
         ppStr("("),
-        ppSequence(0,
-          interleave(cons of { all showType(El,999) where El in L},ppStr(", "))),
+        showTypeSequence(L),
         ppStr(")")])
 
   private
-  fun showUniv(iUniv(V,T),Pr) is cons of [ppStr(Pr),ppStr(V),..showUniv(T,",")]
+  fun showTypeSequence(L) is 
+      ppSequence(0,
+          interleave(cons of { all showType(El,999) where El in L},ppStr(", ")))
+
+  private
+  fun showUniv(iUniv(V,T),Pr) is cons of [ppStr(Pr),ppStr("%%"),ppStr(V),..showUniv(T,",")]
    |  showUniv(T,_) is cons of [ ppStr(" such that "), showType(T,1010)]
 
   private
-  fun showExists(iExists(V,T),Pr) is cons of [ppStr(Pr), ppStr(V),..showExists(T,",")]
+  fun showExists(iExists(V,T),Pr) is cons of [ppStr(Pr),ppStr("%%"),ppStr(V),..showExists(T,",")]
    |  showExists(T,_) is cons of [ ppStr(" such that "), showType(T,1010)]
 
   private
@@ -123,11 +135,8 @@ types is package{
    |  parenthesize(E,true) is ppSequence(0,cons of [ppStr("("), E, ppStr(")")])
 
   private
-  fun showConstraint(iContractCon(Ct)) where isEmpty(Ct.depTypes) is
-        ppSequence(0,cons of [ ppStr(Ct.name), ppStr(" over "), showTypeList(Ct.argTypes)])
-   |  showConstraint(iContractCon(Ct)) is
-        ppSequence(0,cons of [ ppStr(Ct.name), ppStr(" over "), showTypeList(Ct.argTypes), ppStr(" determines "), showTypeList(Ct.depTypes)])
-   |  showConstraint(iFieldCon(T,F,FT)) is
+  fun showConstraint(isOver(T)) is showType(T,999)
+   |  showConstraint(hasField(T,F,FT)) is
         ppSequence(0,cons of [
           showType(T,899),
           ppSpace,
@@ -187,10 +196,11 @@ types is package{
      |  varsIn(soFar,iUniv(N,BTp)) is varsIn(soFar,BTp)
      |  varsIn(soFar,iExists(N,BTp)) is varsIn(soFar,BTp)
      |  varsIn(soFar,iConstrained(CTp,Cn)) is inCon(varsIn(soFar,CTp),Cn)
+     |  varsIn(soFar,iContract(_,At,Dt)) is leftFold(varsIn,leftFold(varsIn,soFar,At),Dt)
      |  varsIn(soFar,_) default is soFar
 
-    fun inCon(soFar,iContractCon(Ct)) is leftFold(varsIn,leftFold(varsIn,soFar,Ct.argTypes),Ct.depTypes)
-     |  inCon(soFar,iFieldCon(_,_,BTp)) is varsIn(soFar,BTp)
+    fun inCon(soFar,isOver(Ct)) is varsIn(soFar,Ct)
+     |  inCon(soFar,hasField(_,_,BTp)) is varsIn(soFar,BTp)
      |  inCon(soFar,iTypeCon(_,_,BTp)) is varsIn(soFar,BTp)
      |  inCon(soFar,instanceOf(L,R)) is varsIn(varsIn(soFar,L),R)
      |  inCon(soFar,hasKind(L,_)) is varsIn(soFar,L)
@@ -202,7 +212,7 @@ types is package{
 
   private
   mapFold has type ((set of integer,iType)=>set of integer,set of integer,dictionary of (string,iType))=>set of integer
-  fun mapFold(F,I,D) is leftFold(fn(A,(_,T))=>F(A,T),I,D)
+  fun mapFold(F,I,D) is leftFold((A,(_,T))=>F(A,T),I,D)
 
   fun occursIn(Id,T) is contains_element(varsInType(T),Id)
 

@@ -43,11 +43,11 @@ trie is package{
   private
   fun trieIterate(trie{value=some(V);dict=D},F,S) is 
     _checkTerate(F(V,S),F,D)
-   |  trieIterate(trie{value=none;dict=D},F,S) is _iterate(D,fn(X,St) => _iterate(X,F,St),S)
+   |  trieIterate(trie{value=none;dict=D},F,S) is _iterate(D,(X,St) => _iterate(X,F,St),S)
 
   private
   fun _checkTerate(NoMore(X),_,_) is NoMore(X)
-   |  _checkTerate(S,F,D) is _iterate(D,fn(X,St) => _iterate(X,F,St),S)
+   |  _checkTerate(S,F,D) is _iterate(D,(X,St) => _iterate(X,F,St),S)
 
   implementation for all k,v such that indexable over trie of (k,v) determines (list of k,v) is {
     fun _index(Tr,Ks) is findInTrie(Ks,Tr)

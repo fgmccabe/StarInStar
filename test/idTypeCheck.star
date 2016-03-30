@@ -23,5 +23,8 @@ worksheet{
 
   show typeOfExp(f,typeVar(),D,D)
 
-  show typeOfExp(parseString("let { fun id(X) is X; def a is id(23); def b is id(\"fred\") } in id(b)"),typeVar(),D,D)
+  def i is typeOfExp(parseString("let { fun id(X) is X; def a is id(23); def b is id(\"fred\") } in id(b)"),typeVar(),D,D)
+
+  show i
+  assert more(i,(x)=>good(x.tipe=iType("string"))) = good(true)
 }

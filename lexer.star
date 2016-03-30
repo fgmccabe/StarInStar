@@ -106,7 +106,7 @@ lexer is package{
                 report(charTok('n',tkLoc(St,3)),mvSt(St,3)) :
                 report(idTok("'n",tkLoc(St,2)),mvSt(St,2))
               case _ default is readChar(nxSt(St),
-                  fn(cuSt,Ch)=>valof{
+                  (cuSt,Ch)=>valof{
                     if not hedChar(cuSt) has value '\'' then
                       reportError("expecting a ', got $(hedChar(cuSt))",list of [tkLoc(St,1)])
                     valis report(charTok(Ch,deltaLoc(St,nxSt(cuSt))),nxSt(cuSt))
@@ -118,8 +118,8 @@ lexer is package{
             case '\`' is readRegexp(St)
             case '0' where hedHedChar(St) has value 'c' is
                 readChar(mvSt(St,2),
-                  fn(nSt,ch)=>report(integerTok(ch as integer,deltaLoc(St,nSt)),nSt))
-            case '\\' is readIden(St,fn(Id,ISt)=>report(idTok(Id,deltaLoc(St,ISt)),ISt))
+                  (nSt,ch)=>report(integerTok(ch as integer,deltaLoc(St,nSt)),nSt))
+            case '\\' is readIden(St,(Id,ISt)=>report(idTok(Id,deltaLoc(St,ISt)),ISt))
             case D where isDigit(D) is readNumber(St)
             case X where isLeadInChar(X) is let{
                 -- follow the token graph
@@ -131,7 +131,7 @@ lexer is package{
                       report(idTok(revImplode(last),deltaLoc(St,lastSt)),lastSt)
                 def FG is someValue(firstGraph(X))
               } in followGraph(nxSt(St),cons of [X],isTermGraph(FG)?(cons of [X],St):(cons of [],St),FG)
-            case Ch where isIdentifierStart(Ch) is readIden(St,fn(Id,ISt)=>report(idTok(Id,deltaLoc(St,ISt)),ISt))
+            case Ch where isIdentifierStart(Ch) is readIden(St,(Id,ISt)=>report(idTok(Id,deltaLoc(St,ISt)),ISt))
             case X default is valof{
               reportError("invalid char: $X/0x$(X as integer):XXXX;)",list of [tkLoc(St,1)])
               valis nxTok(nxSt(St))
@@ -174,12 +174,12 @@ lexer is package{
     fun readIden(State,Cont) is let{
       fun readId() where hedChar(State) has value F and isIdentifierStart(F) is readMore(nxSt(State),cons(F,nil))
        |  readId() where hedChar(State) has value '\\' is
-            grabQtChar(nxSt(State),fn(cuSt,Ch) => readMore(cuSt,cons of [Ch]))
+            grabQtChar(nxSt(State),(cuSt,Ch) => readMore(cuSt,cons of [Ch]))
 
       fun readMore(St,Id) where hedChar(St) has value C and isIdentifierChar(C) is
             readMore(nxSt(St),cons of [C,..Id])
        |  readMore(St,Id) where hedChar(St) has value '\\' is
-            grabQtChar(nxSt(St),fn(cuSt,Ch) => readMore(cuSt,cons of [Ch,..Id]))
+            grabQtChar(nxSt(St),(cuSt,Ch) => readMore(cuSt,cons of [Ch,..Id]))
        |  readMore(St,Id) default is Cont(revImplode(Id),St)
     } in readId()
 
@@ -203,7 +203,7 @@ lexer is package{
       fun readReg(St,soFar) where hedChar(St) has value '\`' is
             report(regexpTok(revImplode(soFar),deltaLoc(State,St)),nxSt(St))
        |  readReg(St,soFar) where hedChar(St) has value '\\' is
-            grabQtChar(St,fn(cuSt,Ch)=>readReg(cuSt,cons of [Ch,..soFar]))
+            grabQtChar(St,(cuSt,Ch)=>readReg(cuSt,cons of [Ch,..soFar]))
        |  readReg(St,soFar) where hedChar(St) has value nCh is readReg(nxSt(St),cons of [nCh,..soFar])
     } in readReg(nxSt(State),cons of [])
 
@@ -230,7 +230,7 @@ lexer is package{
 
     fun readString(State) is let{
       fun readStr(St,soFar) where hedChar(St) has value X is switch X in {
-        case '\\' is grabQtChar(nxSt(St),fn(cuSt,Ch)=>readStr(cuSt,cons of [Ch,..soFar]))
+        case '\\' is grabQtChar(nxSt(St),(cuSt,Ch)=>readStr(cuSt,cons of [Ch,..soFar]))
         case '\"' is report(stringTok(revImplode(soFar),deltaLoc(State,St)),nxSt(St))
         case '$' is interpolate(nxSt(St),list of [literalSegment(revImplode(soFar),deltaLoc(State,St))],displayMode)
         case '#' is interpolate(nxSt(St),list of [literalSegment(revImplode(soFar),deltaLoc(State,St))],convertMode)
@@ -238,11 +238,11 @@ lexer is package{
       }
 
       fun interpolate(St,soFar,Mode) where hedChar(St) has value Ch is switch Ch in {
-        case '\(' is bracketCont(St,fn(Text,ESt)=>
-            readFormat(ESt,fn(Fmt,FSt)=>interpolateMore(FSt,list of [soFar..,interpolateElement(Mode,Text,Fmt,deltaLoc(St,FSt))])))
+        case '\(' is bracketCont(St,(Text,ESt)=>
+            readFormat(ESt,(Fmt,FSt)=>interpolateMore(FSt,list of [soFar..,interpolateElement(Mode,Text,Fmt,deltaLoc(St,FSt))])))
         case X where isIdentifierChar(X) is
-          readIden(St,fn(Id,ESt)=>
-            readFormat(ESt,fn(Fmt,FSt)=>interpolateMore(FSt,list of [soFar..,interpolateElement(Mode,Id,Fmt,deltaLoc(St,FSt))])))
+          readIden(St,(Id,ESt)=>
+            readFormat(ESt,(Fmt,FSt)=>interpolateMore(FSt,list of [soFar..,interpolateElement(Mode,Id,Fmt,deltaLoc(St,FSt))])))
       }
 
       fun readFormat(St,Cont) where hedChar(St) has value ':' is let{
@@ -269,7 +269,7 @@ lexer is package{
 
       fun interpolateMore(SSt,segments) is let{
         fun stringSeg(St,soFar) where hedChar(St) has value hCh is switch hCh in {
-          case '\\' is grabQtChar(nxSt(St),fn(cuSt,Ch)=>stringSeg(cuSt,cons of [Ch,..soFar]))
+          case '\\' is grabQtChar(nxSt(St),(cuSt,Ch)=>stringSeg(cuSt,cons of [Ch,..soFar]))
           case '\"' is report(interpolatedString(list of [segments..,literalSegment(revImplode(soFar),deltaLoc(SSt,St))],deltaLoc(State,St)),nxSt(St))
           case '$' is interpolate(nxSt(St),list of [segments..,literalSegment(revImplode(soFar),deltaLoc(SSt,St))],displayMode)
           case '#' is interpolate(nxSt(St),list of [segments..,literalSegment(revImplode(soFar),deltaLoc(SSt,St))],convertMode)

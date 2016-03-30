@@ -10,13 +10,15 @@ dict is package{
 
   type varEntry is varEntry{
     tipe has type iType
+  } or conEntry{
+    tipe has type iType
   } or contractImplementation {
-    implType has type iContract
+    implType has type iType
   }
 
   type contractEntry is contractEntry{
-    tipe has type iContract
-    spec has type iType -- actually a constructor type
+    tipe has type iType
+    spec has type iType
   }
 
   type dict is dict{
@@ -39,11 +41,26 @@ dict is package{
   fun declareVar(Dict,Nm,Ve) is Dict substitute { names = Dict.names[with Nm->Ve]}
   fun declareType(Dict,Nm,Te) is Dict substitute { types = Dict.types[with Nm->Te]}
 
+  fun declareContract(Dict,Nm,Tp,Spec) is valof {
+    var D := Dict substitute { contracts = Dict.contracts[with Nm->contractEntry{tipe=Tp;spec=Spec}]}
+    if Spec matches iFace(Fields,Types) then {
+      for K->T in Fields do 
+        D := defineVar(D,K,T)
+    }
+    valis D
+  }
+
   defineVar has type (dict,string,iType) => dict
   fun defineVar(Dict,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{tipe=Tp}]}
 
+  defineConstructor has type (dict,string,iType) => dict
+  fun defineConstructor(Dict,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->conEntry{tipe=Tp}]}
+
+  introduceType has type (dict,string,iType)=>dict
+  fun introduceType(Dict,Nm,Tp) is declareType(Dict,Nm,typeIs(Tp))
+
   fun typeOfField(Dict,algebraic(_,Cons),Nm) is valof{
-    for C in Cons and findVar(Dict,C) has value varEntry{tipe=Con} do {
+    for C in Cons and findVar(Dict,C) has value conEntry{tipe=Con} do {
       if preCheck(Con,Nm) and findFieldInCon(freshen(Con),Nm) has value Tp then {
         valis some(Tp)
       }
@@ -55,7 +72,7 @@ dict is package{
   fun declareAlgebraic(Dict,Nm,Tp,Cons) is valof{
     var D := declareType(Dict,Nm,algebraic(Tp,list of { all Ky where  Ky->_ in Cons}))
     for Ky->ConTp in Cons do
-      D := declareVar(D,Ky,varEntry{tipe=ConTp})
+      D := declareVar(D,Ky,conEntry{tipe=ConTp})
     valis D
   }
 
@@ -71,11 +88,7 @@ dict is package{
    |  findFieldInCon(iFace(L,_),Nm) is L[Nm]
    |  findFieldInCon(_,_) default is none
 
-  fun generalizeType(Tp,D) is valof{
-    def R is generalize(Tp,(T)=>occCheck(T,D))
-    logMsg(info,"generalized $Tp in $D is $R")
-    valis R
-  }
+  fun generalizeType(Tp,D) is generalize(Tp,(T)=>occCheck(T,D))
 
   private fun occCheck(iTvar{id=i;name=name;constraints=c},D) is let{
       fun check(dict{types=Tps}) where  typeIs(Tp) in Tps and occursIn(i,Tp) is some(true)
@@ -84,21 +97,4 @@ dict is package{
   } in (findInDict(D,check) has value X ? X : false)
 
   fun intersectDict(D1,D2) is D1 -- temporary definition
-
-  def stdDict is dict{
-    names = dictionary of [
-      "none"->varEntry{tipe = iUniv("t",iTpExp(iType("option"),iBvar("t")))},
-      "some"->varEntry{tipe = iUniv("t",iConTp(iBvar("t"),iTpExp(iType("option"),iBvar("t"))))}]
-    types = dictionary of [
-      "integer" -> typeIs(iType("integer")),
-      "long" -> typeIs(iType("long")),
-      "float" -> typeIs(iType("float")),
-      "decimal" -> typeIs(iType("decimal")),
-      "char" -> typeIs(iType("char")),
-      "string" -> typeIs(iType("string")),
-      "option" -> algebraic(iUniv("t",iTpExp(iType("option"),iBvar("t"))),["none", "some"])
-    ]
-    contracts = dictionary of []
-    outer = none
-  }
 }

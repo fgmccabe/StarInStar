@@ -38,4 +38,33 @@ nogood is package{
      |  gdSeq([good(E),..R],soFar) is gdSeq(R,[soFar..,E])
      |  gdSeq([noGood(M,L),.._],_) is noGood(M,L) 
   } in gdSeq(S,[])
+
+  implementation (computation) over good determines ((string,srcLoc)) is {
+    fun _encapsulate(X) is good(X)
+    fun _abort((M,L)) is noGood(M,L)
+    fun _handle(good(X),_) is good(X)
+     |  _handle(noGood(M,L),F) is F((M,L))
+    fun _combine(good(X),F) is F(X)
+     |  _combine(noGood(M,L),_) is noGood(M,L)
+  }
+
+  implementation execution over good is {
+    fun _perform(good(X)) is X
+  }
+
+  implementation injection over (good,good) is {
+    fun _inject(C) is C;
+  }
+
+  implementation injection over (IterState,good) is {
+    fun _inject(NoMore(X)) is good(X)
+     |  _inject(AbortIter(E matching exception(_,_,Lc))) is noGood("$E",Lc as srcLoc)
+     |  _inject(NoneFound) is noGood("no answers",missing)
+     |  _inject(ContinueWith(X)) is good(X)
+  }
+
+  implementation injection over (good, IterState) is {
+    fun _inject(good(X)) is ContinueWith(X)
+     |  _inject(noGood(M,L)) is AbortIter(exception("error",(M,L) cast any,noWhere))
+  }
 }

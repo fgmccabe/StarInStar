@@ -3,7 +3,7 @@ contracts is package{
   private import canonical
   private import types
 
-  fun implementationName(iContract{name=N; argTypes = A}) is let {
+  fun implementationName(iContract(N,A,_)) is let {
     fun allNames(list of [],soFar) is some(soFar)
      |  allNames(list of [T,..R],soFar) is switch deRef(T) in {
           case iType(Nm) is allNames(R,soFar++"#"++Nm)

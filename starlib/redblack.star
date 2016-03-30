@@ -165,7 +165,7 @@ redblack is package{
    |  ixNext(St,F,k,v,R) is ixIterate(R,F,F(k,v,St))
 
   implementation iterable over redblack of (%k,%v) determines %v is {
-    fun _iterate(M,F,S) is ixIterate(M,fn(iX,iY,St) => F(iY,St),S)
+    fun _iterate(M,F,S) is ixIterate(M,(iX,iY,St) => F(iY,St),S)
   }
 
   implementation indexed_iterable over redblack of (%k,%v) determines (%k,%v) is {

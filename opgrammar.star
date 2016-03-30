@@ -99,7 +99,7 @@ opgrammar is package{
           else
             valis asApply(SLc,asName(SLc,"coerce"),asTuple(SLc,"()",list of [El,asString(SLc,Fmt)]))
         }
-  } in leftFold1(fn(L,R)=>asApply(Lc,asName(Lc,"++"),asTuple(Lc,"()",list of [L,R])),map(parseEl,Els))
+  } in leftFold1((L,R)=>asApply(Lc,asName(Lc,"++"),asTuple(Lc,"()",list of [L,R])),map(parseEl,Els))
 
   fun term00(Tks,Ops) where nxtTok(Tks,Ops) matches (idTok(Id,Lc),Toks) is switch Id in {
         case "\#(" is valof{
