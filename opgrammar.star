@@ -1,10 +1,11 @@
 opgrammar is package{
-  private import errors
   private import lexer
   private import operators
   private import trie
   private import leftRight
   private import ast
+  private import errors
+  private import (trace)
 
   fun term(Toks,priority,Ops) is termRight(termLeft(Toks,priority,Ops),priority,Ops)
 
@@ -112,6 +113,9 @@ opgrammar is package{
             valis (RToks,T,lLc)
           }
         };
+        case "\(" where nxtTok(Toks,Ops) matches (idTok(xId,_),iToks) and
+               nxtTok(iToks,Ops) matches (idTok("\)",xLc),xToks) and sameLine(Lc,xLc) is
+           (xToks,asName(mergeLocation(Lc,xLc),xId),xLc)
         case "\(" is parseParens(Lc,Toks,Ops)
         case "\{" is parseBraces(Lc,Toks,Ops)
         case Nm default is 

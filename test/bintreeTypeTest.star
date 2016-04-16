@@ -1,26 +1,17 @@
 worksheet{
-  import parseForTest
-  import parseType
-  import freshen
-  import dict
-  import check
-  import canonical
-  import types
-  import good
-  import subsume
-  import stdTypes
+  import testUtils
 
   def pT is valof parseType(parseString("(integer,integer)=>integer"),stdDict)
   def cT is valof parseType(parseString("(integer,integer)=>boolean"),stdDict)
 
   def D is valof{
-    var Dx := declareVar(stdDict,"plus",varEntry{tipe=pT})
-    Dx := declareVar(Dx,"minus",varEntry{tipe=pT})
-    Dx := declareVar(Dx,"times",varEntry{tipe=pT})
-    Dx := declareVar(Dx,">",varEntry{tipe=cT})
-    Dx := declareVar(Dx,"<",varEntry{tipe=cT})
-    Dx := declareVar(Dx,">=",varEntry{tipe=cT})
-    Dx := declareVar(Dx,"=<",varEntry{tipe=cT})
+    var Dx := declareVar(stdDict,"plus",varEntry{loc=missing;tipe=pT})
+    Dx := declareVar(Dx,"minus",varEntry{loc=missing;tipe=pT})
+    Dx := declareVar(Dx,"times",varEntry{loc=missing;tipe=pT})
+    Dx := declareVar(Dx,">",varEntry{loc=missing;tipe=cT})
+    Dx := declareVar(Dx,"<",varEntry{loc=missing;tipe=cT})
+    Dx := declareVar(Dx,">=",varEntry{loc=missing;tipe=cT})
+    Dx := declareVar(Dx,"=<",varEntry{loc=missing;tipe=cT})
     valis Dx
   }
 

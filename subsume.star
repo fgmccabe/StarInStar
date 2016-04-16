@@ -1,6 +1,6 @@
 subsume is package{
   private import types
-  private import dict
+  private import canonical
   private import location
   private import good
   private import contracts
@@ -25,10 +25,15 @@ subsume is package{
         : noGood("arity of $t1 different to arity of $t2",Lc);
       case (iFace(M1,T1),iFace(M2,T2)) is subFace(M1,T1,M2,T2);
       case (iFnTp(A1,R1),iFnTp(A2,R2)) is both(checkSub(A2,A1),()=>checkSub(R1,R2));
+      case (iFnTp(A1,R1),iConTp(A2,R2)) is both(checkSub(A2,A1),()=>checkSub(R1,R2));
       case (iPtTp(A1,R1),iPtTp(A2,R2)) is both(checkSub(A1,A2),()=>checkSub(R2,R1));
+      case (iPtTp(A1,R1),iConTp(A2,R2)) is both(checkSub(A1,A2),()=>checkSub(R2,R1));
       case (iConTp(A1,R1),iConTp(A2,R2)) is both(checkSame(A1,A2),()=>checkSame(R1,R2));
       case (iRfTp(A1),iRfTp(A2)) is checkSame(A1,A2);
       case (iTpExp(C1,A1),iTpExp(C2,A2)) is both(checkSub(C1,C2),()=>checkSub(A1,A2));
+      case (iContract(Nm,A1,D1),iContract(Nm,A2,D2)) is size(A1)=size(A2) and size(D1)=size(D2) ?
+          both(subList(A1,A2,sub),()=>subList(D1,D2,sub)) :
+          noGood("arity of $t1 different to arity of $t2",Lc)
       case (iUniv(_,_),_) is valof{
       	def (f1,_) is freshenForUse(v1)
       	valis sub(f1,deRef(f1),t2,v2)
@@ -118,8 +123,8 @@ subsume is package{
             case isTuple(xT) is noGood("$xT is not a tuple type",Lc)
       	  }),()=>checkConstraints(L,T,S))
 
-    fun checkContract(Cn,S) where implementationName(Cn) has value Nm is valof{
-          if findVar(D,Nm) has value contractImplementation {implType = iCn} then
+    fun checkContract(Cn,S) where implName(Cn) has value Nm is valof{
+          if findImplementation(D,Nm) has value implEntry{tipe = iCn} then
             valis subContract(Cn,iCn,S)
           else
             valis noGood("$Cn not known to be implemented",Lc)
@@ -138,9 +143,9 @@ subsume is package{
 
     fun checkKind(iType(Nm),K) where findType(D,Nm) has value Desc is 
       switch Desc in {
-        case typeIs(iT) is checkForm(evidence(iT),K)
-        case algebraic(iT,_) is checkForm(evidence(iT),K)
-        case typeAlias(iF) where iF(iType(Nm)) has value aTp is checkKind(aTp,K)
+        case typeIs{tipe=iT} is checkForm(evidence(iT),K)
+        case algebraicEntry{tipe=iT} is checkForm(evidence(iT),K)
+--        case typeAlias(iF) where iF(iType(Nm)) has value aTp is checkKind(aTp,K)
         case _ default is noGood("$Nm not a $K type",Lc)
       }
 

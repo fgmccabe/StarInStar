@@ -7,7 +7,7 @@ worksheet{
   import ast
   import types;
   import parseType;
-  import dict;
+  import canonical;
   import freshen;
   import parseForTest
 

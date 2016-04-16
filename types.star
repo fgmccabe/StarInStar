@@ -222,8 +222,16 @@ types is package{
   fun typeName(Tp) is switch deRef(Tp) in {
     case iType(Nm) is some(Nm)
     case iTpExp(Op,Nm) is typeName(Op)
+    case iTuple(L) is some("()$(size(L))")
+    case iContract(_,_,_) is implName(deRef(Tp))
     case iUniv(_,QT) is typeName(QT)
     case iExists(_,QT) is typeName(QT)
     case iConstrained(CT,_) is typeName(CT)
+    case _ default is none
   }
+
+  fun implName(iContract(Nm,At,_)) is let {
+    fun addInTp(some(SoF),Tp) is typeName(Tp) has value TNm ? some(SoF++"#"++TNm) : none
+     |  addInTp(St,_) default is St
+  } in leftFold(addInTp,some("$"++Nm),At)
 }

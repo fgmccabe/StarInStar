@@ -1,8 +1,8 @@
 lexer is package{
   private import location
-  private import errors
   private import operators
   private import stream
+  private import errors
 
   type token is idTok(string,srcLoc)
     or integerTok(integer,srcLoc)

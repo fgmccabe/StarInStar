@@ -2,7 +2,6 @@ worksheet{
   import parseForTest
   import parseType
   import freshen
-  import dict
   import check
   import canonical
   import types

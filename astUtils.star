@@ -4,7 +4,7 @@ astUtils is package{
   */
   private import ast
   private import good
-
+  private import (trace)
 
   private import lexer;
   private import operators;
@@ -23,6 +23,10 @@ astUtils is package{
     def (_,_,T) is term(tokens,2000,standardOps)
     valis T
   }
+
+  ptn isPackage(Lc,Nm,Content) from isBinary(Lc,"is",asName(_,Nm),isLabeledRecord(_,asName(_,"package"),Content))
+
+  ptn isWorksheet(Lc,Content) from isLabeledRecord(Lc,asName(_,"worksheet"),Content)
 
   ptn isFunDef(Lc,Eqns) from asApply(Lc,asName(_,"fun"),asTuple(_,_,list of [Eqns]))
 
@@ -44,13 +48,15 @@ astUtils is package{
 
   ptn isVarDef(Lc,Eqn) from asApply(Lc,asName(_,"var"),asTuple(_,_,[Eqn]))
 
-  ptn isContractDef(Lc,Tp,Body) from asApply(Lc,asName(_,"contract"),
-                                        asTuple(_,_,[asApply(_,asName(_,"is"),asTuple(_,"()",[Tp,Body]))]))
+  ptn isContractDef(Lc,Nm,Tp,Body) from isUnary(Lc,"contract",isBinary(_,"is",Tp,Body)) where
+       Tp matches isNameOfContract(_,Nm)
 
-  fun definedContractName(isContractDef(_,asApply(_,asName(_,"over"),asTuple(_,"()",[L,R])),_)) is typeName(L)
+  ptn isNameOfContract(Lc,Nm) from isBinary(_,"over",isIden(Lc,Nm),_)
 
-  ptn isImplementation(Lc,Tp,Exp) from asApply(Lc,asName(_,"implementation"),
-                                        asTuple(_,_,[asApply(_,asName(_,"is"),asTuple(_,"()",[Tp,Exp]))]))
+  fun definedContractName(isContractDef(_,Nm,_,_)) is good(Nm)
+   |  definedContractName(Def) is noGood("cannot get contract name from $Def",locOf(Def))
+
+  ptn isImplementation(Lc,Tp,Exp) from isUnary(Lc,"implementation",isBinary(_,"is",Tp,Exp))
 
   fun implementedContractName(isImplementation(_,asApply(_,asName(_,"over"),asTuple(_,"()",[L,R])),_)) is typeName(L)
 
@@ -60,19 +66,25 @@ astUtils is package{
 
   ptn isAssignment(Lc,Lhs,Rhs) from asApply(Lc,asName(_,":="),asTuple(_,_,list of [Lhs,Rhs]))
 
-  ptn isTypeDef(Lc,Rl) from asApply(Lc,asName(_,"type"),asTuple(_,_,list of [Rl]))
+  ptn isTypeDef(Lc,Rl) from isUnary(Lc,"type",Rl)
 
   ptn isTypeAliasDef(Lc,Lhs,Rhs) from isTypeDef(Lc,isEquation(_,Lhs,isUnary(_,"alias of",Rhs)))
 
-  ptn isAlgebraicTypeDef(Lc,Lhs,Rhs) from isTypeDef(Lc,isEquation(_,Lhs,Rhs))
+  ptn isAlgebraicTypeDef(Lc,Nm,Lhs,Rhs) from isTypeDef(Lc,isEquation(_,Lhs,Rhs)) where Lhs matches isNameOfType(_,Nm)
 
-  ptn isTypeAssignment(Lc,Nm,Rhs) from asApply(Lc,asName(_,"type"),asTuple(_,"()",[asApply(_,asName(_,"="),asTuple(_,_,[isIden(_,Nm),Rhs]))]))
+  ptn isTypeAssignment(Lc,Nm,Rhs) from isUnary(_,"type",isBinary(Lc,"=",isIden(_,Nm),Rhs))
 
   ptn isTypeAnnotation(Lc,Lhs,Tp) from asApply(Lc,asName(_,"has type"),asTuple(_,"()",[Lhs,Tp]))
 
   ptn isKindAnnotation(Lc,Lhs,Tp) from asApply(Lc,asName(_,"has kind"),asTuple(_,"()",[Lhs,Tp]))
 
   ptn isDefault(Lc,Trm) from asApply(Lc,asName(_,"default"),asTuple(_,"()",[Trm]))
+
+  ptn isNameOfType(Lc,Nm) from isIden(Lc,Nm)
+   |  isNameOfType(Lc,Nm) from isBinary(Lc,"of",isIden(_,Nm),_)
+   |  isNameOfType(Lc,Nm) from isBinary(Lc,"over",isIden(_,Nm),_)
+   |  isNameOfType(Lc,Nm) from isBinary(Lc,"where",isNameOfType(_,Nm),R)
+   |  isNameOfType(Lc,Nm) from isBinary(_,"such that",_,isNameOfType(Lc,Nm))
 
   ptn isDefaultField(Lc,Lhs,Exp) from asApply(Lc,asName(_,"is"),asTuple(_,"()",[isDefault(_,Lhs),Exp]))
    |  isDefaultField(Lc,Lhs,Exp) from asApply(Lc,asName(_,":="),asTuple(_,"()",[isDefault(_,Lhs),Exp]))

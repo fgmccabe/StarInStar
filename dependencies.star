@@ -2,49 +2,51 @@ dependencies is package{
   private import topsort
   private import ast
   private import good
-  private import errors
   private import astUtils
+  private import access
+  private import (trace)
 
   -- name spaces
   type category is expsion or tipe or other
-  type astGroup is alias of list of ((ast, category,set of string))
+  type astGroup is alias of list of ((ast, accessMode, category,set of string))
 
   dependencies has type (list of ast) => list of astGroup
   fun dependencies(Th) is let{
     def definitions is programDefs(Th)
-    def groups is topological(definitions)
+    def groups is topological(definitions) trace "groups"
     fun projectCat(D) is someValue(any of C where (C,_) in D)
     fun projectDefs(D) is set of {all Df where (_,Df) in D}
-  } in (list of { all list of {all (T,projectCat(D),projectDefs(D)) where topDef{orig=T;definitions=D} in group} where group in groups})
+  } in (list of { all list of {all (T,A,projectCat(D),projectDefs(D)) where topDef{orig=(A,T);definitions=D} in group} where group in groups})
 
   private
-  programDefs has type (list of ast) => list of topDef of (ast,(category,string))
+  programDefs has type (list of ast) => list of topDef of ((accessMode,ast),(category,string))
   fun programDefs(L) is let{
-    def Dfs is map(definitionStruct,L)
+    def Dfs is map((S)=>definitionStruct(S,pUblic),L)
     def All is buildDefDict(Dfs)
-  } in map(((Fn,_,Defs,Trm))=>topDef{orig=Trm;definitions=Defs;references = Fn(Trm,All,set of [])},Dfs)
+  } in map(((Fn,A,_,Defs,Trm))=>topDef{orig=(A,Trm);definitions=Defs;references = Fn(Trm,All,set of [])},Dfs)
 
   private
-  fun definitionStruct(D) is switch D in {
-    case asApply(_,asName(_,"type"),_) is (analyseTypeDefn,tipe,setOfGood(definedTypeName(D),tipe),D)
-    case asApply(_,asName(_,"fun"),_) is (analyseFunDefn,expsion,setOfGood(definedFunName(D),expsion),D)
-    case asApply(_,asName(_,"prc"),_) is (analysePrcDefn,expsion,setOfGood(definedPrcName(D),expsion),D)
-    case asApply(_,asName(_,"ptn"),_) is (analysePtnDefn,expsion,setOfGood(definedPtnName(D),expsion),D)
-    case asApply(_,asName(_,"def"),_) is (analyseDefDefn,expsion,map((Nm)=>(expsion,Nm),definedDefNames(D)),D)
-    case asApply(_,asName(_,"var"),_) is (analyseVarDefn,expsion,map((Nm)=>(expsion,Nm),definedVarNames(D)),D)
-    case asApply(_,asName(_,"contract"),_) is (analyseContract,tipe,setOfGood(definedContractName(D),tipe),D)
-    case asApply(_,asName(_,"implementation"),_) is (analyseImplementation,expsion,setOfGood(implementedContractName(D),expsion),D)
-    case asApply(_,asName(_,"import"),_) is (analyseImport,other,set of [],D)
-    case asApply(_,asName(_,"is"),asTuple(_,"()",[_,asApply(_,asName(_,"import"),_)])) is (analyseImport,other,set of [],D)
-    case X default is (analyseOther,other,set of [],D)
+  fun definitionStruct(D,A) is switch D in {
+    case isUnary(_,"private",Def) is definitionStruct(Def,priVate)
+    case asApply(_,asName(_,"type"),_) is (analyseTypeDefn,A,tipe,setOfGood(definedTypeName(D),tipe),D)
+    case asApply(_,asName(_,"fun"),_) is (analyseFunDefn,A,expsion,setOfGood(definedFunName(D),expsion),D)
+    case asApply(_,asName(_,"prc"),_) is (analysePrcDefn,A,expsion,setOfGood(definedPrcName(D),expsion),D)
+    case asApply(_,asName(_,"ptn"),_) is (analysePtnDefn,A,expsion,setOfGood(definedPtnName(D),expsion),D)
+    case asApply(_,asName(_,"def"),_) is (analyseDefDefn,A,expsion,map((Nm)=>(expsion,Nm),definedDefNames(D)),D)
+    case asApply(_,asName(_,"var"),_) is (analyseVarDefn,A,expsion,map((Nm)=>(expsion,Nm),definedVarNames(D)),D)
+    case asApply(_,asName(_,"contract"),_) is (analyseContract,A,tipe,setOfGood(definedContractName(D),tipe),D)
+    case asApply(_,asName(_,"implementation"),_) is (analyseImplementation,A,expsion,setOfGood(implementedContractName(D),expsion),D)
+    case asApply(_,asName(_,"import"),_) is (analyseImport,A,other,set of [],D)
+    case asApply(_,asName(_,"is"),asTuple(_,"()",[_,asApply(_,asName(_,"import"),_)])) is (analyseImport,A,other,set of [],D)
+    case X default is (analyseOther,A,other,set of [],D)
   }
 
   private
   fun buildDefDict(L) is leftFold((Dc,E)=>refDict(E,Dc),dictionary of [],L)
 
   private
-  fun refDict((_,k,N,_),D) where D[k] has value Defs is D[with k->Defs union N]
-   |  refDict((_,k,N,_),D) default is D[with k->N]
+  fun refDict((_,_,k,N,_),D) where D[k] has value Defs is D[with k->Defs union N]
+   |  refDict((_,_,k,N,_),D) default is D[with k->N]
 
   private
   analyseTypeDefn has type (ast,dictionary of (category,set of ((category,string))),set of ((category,string)))=>set of ((category,string))
@@ -108,7 +110,7 @@ dependencies is package{
     findRefs(Rhs,expsion,All,findRefs(Lhs,expsion,All,set of [],Excl),Excl)
 
   private
-  fun analyseContract(isContractDef(_,conType,conBody),All,Excl) is
+  fun analyseContract(isContractDef(_,_,conType,conBody),All,Excl) is
     findRefs(conBody,tipe,All,findRefs(conType,tipe,All,set of [],Excl),Excl)
 
   private

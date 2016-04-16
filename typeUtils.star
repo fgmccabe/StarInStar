@@ -1,6 +1,7 @@
 typeUtils is package{
-  private import types;
+  private import types
   private import freshen
+  private import good
 
   fun optionType(Tp) is iTpExp(iType("option"),Tp)
 

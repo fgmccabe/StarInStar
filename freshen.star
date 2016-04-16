@@ -1,6 +1,5 @@
 freshen is package{
   private import types
-  -- private import dict
 
   private 
   fun frshn(iExists(bV,bT),M,U,E) is frshn(bT,E(bV,M),U,E)

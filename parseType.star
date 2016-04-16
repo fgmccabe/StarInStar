@@ -1,14 +1,13 @@
 parseType is package{
-  private import errors
   private import ast
   private import astUtils
-  private import dict
+  private import canonical
   private import types
   private import location
   private import freshen
   private import subsume
   private import good
-  private import trace
+  private import (trace)
 
   fun parseType(Ast,Dict) is typeParse(Ast,Dict,dictionary of [])
 
@@ -16,9 +15,9 @@ parseType is package{
     fun parseTp(asName(_,Nm)) where BndVars[Nm] has value Tp is good(Tp)
      |  parseTp(asName(Lc,Nm)) where findType(Dict,Nm) has value Desc is
           switch Desc in {
-            case typeIs(Tpe) is good(freshen(Tpe))
-            case algebraic(Tpe,_) is good(freshen(Tpe))
-            case typeAlias(A) where A(iType(Nm)) has value Tp is good(Tp)
+            case typeIs{tipe=Tpe} is good(freshen(Tpe))
+            case algebraicEntry{tipe=Tpe} is good(freshen(Tpe))
+       --     case typeAlias(A) where A(iType(Nm)) has value Tp is good(Tp)
             case _ default is noGood("cannot understand type $Nm",Lc)
           }
      |  parseTp(asTuple(_,"()",L)) is 
@@ -86,15 +85,24 @@ parseType is package{
                       valis noGood(M,mLc)
                   }
                 }
-                else if El matches isBinary(_,"has kind",asName(_,F),FK) then
-                  ts := iConstrained(ts,iFieldKind(t,F,parseKind(FK)))
+                else if El matches isBinary(_,"has kind",asName(_,F),FK) then{
+                  switch parseKind(FK) in {
+                    case good(K) do
+                      ts := iConstrained(ts,iFieldKind(t,F,K))
+                    case noGood(eM,eLc) do
+                      valis noGood(eM,eLc)
+                  }
+                }
               }
               valis good(ts)
             }
-          }  
+            case noGood(eM,eLc) do
+              valis noGood(eM,eLc)
+          }
         }
-     |  parseConstraints(isBinary(_,"has kind",L,R),T) is
-          more(parseTp(L),(lt)=>good(iConstrained(T,hasKind(lt,parseKind(R)))))
+     |  parseConstraints(isBinary(_,"has kind",L,R),T) is 
+          more(parseTp(L),(lt)=>more(parseKind(R),(K)=>good(iConstrained(T,hasKind(lt,K)))))
+
   } in parseTp(Ast)
 
   private
@@ -103,19 +111,17 @@ parseType is package{
 
 
   private
-  fun parseKind(asName(_,"type")) is kType
-   |  parseKind(isBinary(_,"of",asName(_,"type"),R)) is kTypeFun(countTypes(R))
-   |  parseKind(asName(_,"unknown")) is kUnknown
-   |  parseKind(A) is valof{
-        reportError("Invalid kind specification $A",list of [locOf(A)])
-        valis kUnknown
-      }
+  fun parseKind(asName(_,"type")) is good(kType)
+   |  parseKind(isBinary(_,"of",asName(_,"type"),R)) is good(kTypeFun(countTypes(R)))
+   |  parseKind(asName(_,"unknown")) is good(kUnknown)
+   |  parseKind(A) is noGood("Invalid kind specification $A",locOf(A))
 
   private
   fun countTypes(asName(_,"type")) is 1
    |  countTypes(asTuple(_,"()",L)) is size(L)
 
   private
+  parseRecordType has type (ast,dict,dictionary of (string,iType))=>good of iType
   fun parseRecordType(asTuple(_,"{}",Els),Dict,BndVars) is valof{
     var fields := dictionary of []
     var types := dictionary of []
@@ -138,8 +144,14 @@ parseType is package{
         case isBinary(_,"has kind",L,R) do {
           if deParen(L) matches asName(_,Id) then {
             def eType is iBvar(Id)
-            exVars := list of [hasKind(eType,parseKind(R)),..exVars]
-            types[Id] := eType
+            switch parseKind(R) in {
+              case good(K) do {
+                exVars := list of [hasKind(eType,K),..exVars]
+                types[Id] := eType
+              }
+              case noGood(M,eLc) do
+                valis noGood(M,eLc)
+            }
           }
           else
             valis noGood("Field $L should be an identifier",locOf(L))
@@ -170,12 +182,19 @@ parseType is package{
     valis good(reslt)
   }
 
-  fun parseContract(isUnary(Lc,"contract",isBinary(_,"is",Spec,Body)),D) is good computation {
+  fun introduceContract(isContractDef(Lc,CNm,Spec,Body),D) is good computation {
     def TQ is valof contractSpecVars(Spec,dictionary of [])
-    def (CNm,contrct) is valof parseContractSpec(Spec,D,TQ)
+    def (Nm,contrct) is valof parseContractSpec(Spec,D,TQ)
     def body is valof parseRecordType(Body,D,TQ)
-    def qbody is pushInQuants(body,TQ,(Tp)=>iConstrained(Tp,isOver(contrct)))
-    valis (CNm,rebind(contrct,TQ),qbody)
+    def entry is contractEntry{loc=Lc;tipe=contrct;spec=rebind(iTuple([contrct,body]),TQ)}
+    var Dict := D substitute { contracts = D.contracts[with Nm->entry]}
+
+    if body matches iFace(Fields,Types) then {
+      for K->T in Fields do 
+        Dict := defineVar(Dict,Lc,K,rebind(iConstrained(T,isOver(contrct)),TQ))
+    }
+
+    valis Dict
   }
 
   private
@@ -224,29 +243,28 @@ parseType is package{
   fun typeTemplate(Ast,D) is good computation {
     def (templateVars,TNm,TT) is typeTemplateVars(Ast)
     def template is valof typeParse(Ast,D,templateVars[with TNm->TT])
-    valis (TNm,rebind(template,templateVars))
+    valis rebind(template,templateVars)
   }
 
-  fun parseAlgebraicType(isAlgebraicTypeDef(Lc,Lhs,Rhs),ODict) is good computation{
-    def (Q,TNm,TT) is typeTemplateVars(Lhs)
-    def template is valof typeParse(Lhs,ODict,Q[with TNm->TT])
+  fun parseAlgebraicType(isAlgebraicTypeDef(Lc,Nm,Lhs,Rhs),ODict) is good computation{
+      def (Q,_,TT) is typeTemplateVars(Lhs)
+      def template is valof typeParse(Lhs,ODict,Q[with Nm->TT])
 
-    def Dict is introduceType(ODict,TNm,rebind(template,Q))
-    def conDefs is valof astFold((soF,C)=>more(soF,
-                (sF)=>more(parseConstructor(C,Dict,Q,TT),
-                  ((CNm,Ctp))=>good(list of [(CNm,rightFold(((K,_),conT)=>iUniv(K,conT),Ctp,Q)),..sF]))),
-                good(list of []),"or",Rhs)
-    valis rightFold(((K,KT),D)=>defineConstructor(D,K,KT),Dict,conDefs)
-  }
+      def Dict is introduceType(ODict,Lc,Nm,rebind(template,Q))
+      def conDefs is valof astFold((soF,C)=>more(soF,
+                  (sF)=>more(parseConstructor(C,Dict,Q,TT),
+                    ((CNm,CLc,Ctp))=>good(list of [(CNm,CLc,rightFold(((K,_),conT)=>iUniv(K,conT),Ctp,Q)),..sF]))),
+                  good(list of []),"or",Rhs)
+      valis rightFold(((K,CLc,KT),D)=>defineConstructor(D,CLc,K,KT),Dict,conDefs)
+    }
+   | parseAlgebraicType(Def,ODict) is noGood("cannot parse $Def as algebraicEntry",locOf(Def)) trace "cannot parse $Def"
 
   fun parseConstructor(asApply(Lc,asName(_,Op),Args),D,Q,Tp) is good computation {
-    def argType is valof typeParse(Args,D,Q)
-    valis (Op,iConTp(argType,Tp))
-  }
- |  parseConstructor(isIden(Lc,Op),D,Q,Tp) is good computation {
-    valis (Op,iConTp(iTuple([]),Tp))
-  }
- | parseConstructor(Ast,_,Q,Tp) is noGood("Cannot understand $Ast as constructor",locOf(Ast))
+        def argType is valof typeParse(Args,D,Q)
+        valis (Op,Lc,iConTp(argType,Tp))
+      }
+   |  parseConstructor(isIden(Lc,Op),D,Q,Tp) is good((Op,Lc,Tp))
+   |  parseConstructor(Ast,_,Q,Tp) is noGood("Cannot understand $Ast as constructor",locOf(Ast))
 
 -- Use this when ast is properly implemented
 --  isUniv(<|for all ?V such that ?T |>) is some((V,T))

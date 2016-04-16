@@ -1,18 +1,30 @@
 check is package{
   private import good
-  private import errors
   private import ast
   private import astUtils
   private import canonical
   private import subsume
-  private import dict
   private import parseType
   private import stdTypes
   private import freshen
   private import typeUtils
   private import dependencies
+  private import access
   private import flatmap
   private import (trace)
+
+  typeOfProgram has type (ast,dict) => good of canonProgram
+  fun typeOfProgram(isPackage(Lc,Nm,Body),D) is good computation {
+    def pkgRecord is valof thetaRecord(Lc,Body,typeVar(),D)
+    def pkgType is pkgRecord.tipe
+
+    valis canonPackage{
+      loc = Lc;
+      name = Nm;
+      imports = dictionary of [];
+      pkg = cMemo{loc=Lc;tipe=iFnTp(iTuple([]),pkgType);value=pkgRecord };
+    }
+  }
 
   type expTypePlugin is alias of ((ast,iType,dict,dict) => good of cExp)
 
@@ -176,11 +188,15 @@ check is package{
                                                                       typeVar() matches eTp) or 
       	                                                         (El matches isAssignment(_,isIden(_,Nm),Rhs) and 
                                                                   iRfTp(typeVar()) matches eTp))}
-      	def typeEls is valof goodIterate(A,(isTypeAssignment(_,Nm,eTp))=>more(parseType(eTp,D),(pTp)=>good((Nm,pTp))))
 
-      	valis switch subsume(D,Lc)(E,iFace(elTypes,typeEls)) in {
-      	  case noGood(M,_) is raise ("record not consistent with expected type $E\nbecause #M",Lc)
-      	  case good(_) is valof {
+      	def typeEls is valof goodFilter(A,(() from isTypeAssignment(_,_,_)), 
+              (isTypeAssignment(_,Nm,eTp))=>more(parseType(eTp,D),(pTp)=>good((Nm,pTp))))
+
+        logMsg(info,"type elements: $typeEls")
+
+      	switch subsume(D,Lc)(E,iFace(elTypes,typeEls)) in {
+      	  case noGood(M,_) do abort with ("record not consistent with expected type $E\nbecause #M",Lc)
+      	  case good(_) do {
       	  	def els is dictionary of {all Nm->Exp where El in A and 
       	  	        ((El matches isEqual(_,isIden(_,Nm),Rhs) and 
                       typeOfExp(Rhs,someValue(elTypes[Nm]),D,O) matches good(Exp)) or
@@ -194,35 +210,33 @@ check is package{
 
   private
   fun typeOfLet(isLetTerm(Lc,Body,Bnd),E,D,O) is 
-    more(thetaContents(Body,D),((thDict,env))=>
-              more(typeOfExp(Bnd,E,thDict,O),(bndExp)=>good(cLet{loc=Lc;tipe=E;env=env;bnd=bndExp})))
+    more(thetaContents(Body,D),((thDict,Stmts))=>
+              more(typeOfExp(Bnd,E,thDict,O),(bndExp)=>good(cLet{loc=Lc;tipe=E;env=thDict;stmts=Stmts;bnd=bndExp})))
 
   private
   fun thetaContents(Defs,Dct) is let {
     groups has type list of astGroup
-    def groups is dependencies(Defs) trace "groups are "
+    def groups is dependencies(Defs)
 
-    fun varCheck(LLc,Lhs,Rhs,tmpDict,ThDict,Bldr) is valof{
+    fun varCheck(LLc,Lhs,Rhs,tmpDict,ThDict,Bldr) is good computation {
       def eType is typeVar()
-      def ptnType is typeOfPtn(Lhs,eType,tmpDict,ThDict)
-      def valType is typeOfExp(Rhs,eType,tmpDict,ThDict)
+      def (ptnType,pD) is valof typeOfPtn(Lhs,eType,tmpDict,ThDict)
+      def valType is valof typeOfExp(Rhs,eType,pD,ThDict)
 
-      valis more(ptnType,((P,vD))=>more(valType,(V)=>good((Bldr(LLc,P,V),vD))))
+      valis (Bldr(LLc,ptnType,valType),pD)
     }
 
-    fun funCheck(LLc,Fn,Eqns,tmpDict,ThDict) is let{
+    fun funCheck(LLc,Access,Fn,Eqns,tmpDict,ThDict) is let{
       def lhsType is typeVar()
       def rhsType is typeVar()
       var funDict := tmpDict;
-
-      { logMsg(info,"funDict for $Fn is $funDict")}
 
       -- construct the function type and the dictionary to interpret the equations
       def fnType is valof{
         if findVar(tmpDict,Fn) has value varEntry{tipe=T} then{
           def (fT,M) is freshenForEvidence(T)
           for tV->V in M do -- record the type vars in case explicitly mentioned in body of function
-            funDict := declareType(funDict,tV,typeIs(V))
+            funDict := declareType(funDict,tV,typeIs{loc=LLc;tipe=V})
           switch subsume(funDict,LLc)(iFnTp(lhsType,rhsType),fT) in {
             case good(_) do
               valis good(fT)
@@ -249,11 +263,10 @@ check is package{
           def Val is valof typeOfExp(Rhs,rhsType,pDict,ThDict)
           valis list of [soFar..,(Args,false,Val)]
        }
-
     } in (good computation {
         def fT is valof fnType
-        def Es is valof pipeFold((EqSt,E)=>more(EqSt,(Eqs)=>eqnType(E trace "EQN",Eqs)),good(list of []),Eqns)
-        valis (canonDef(LLc,pVar{loc=LLc;tipe=fT;name=Fn},
+        def Es is valof pipeFold((EqSt,E)=>more(EqSt,(Eqs)=>eqnType(E,Eqs)),good(list of []),Eqns)
+        valis (canonDef(LLc,Access,pVar{loc=LLc;tipe=fT;name=Fn},
                             cLambda{loc=LLc;
                               lhs=pVar{loc=LLc;tipe=lhsType;name="_$"};
                               rhs=cSwitch{loc=LLc;tipe=rhsType;
@@ -262,60 +275,109 @@ check is package{
                               tipe=fT}),funDict)
       })
 
+    fun implementationCheck(Lc,Access,Tp,Body,tmpDict,thDict) is good computation {
+      logMsg(info,"Check implementation for $Tp in $Body")
+      def (Nm,contractType) is valof parseContractSpec(Tp,tmpDict,dictionary of [])
+      logMsg(info,"Contract type $contractType")
+
+      if findContract(tmpDict,Nm) has value contractEntry{tipe=cTp;spec=spType} then {
+        def iTuple([conTp,recType]) is freshen(spType)
+        logMsg(info,"declared contract $conTp is $recType")
+
+        switch subsume(tmpDict,Lc)(conTp,contractType) in {
+          case good(_) do {
+            logMsg(info,"subsumed type is $conTp, record type is $recType");
+            def impl is valof typeOfExp(Body,recType,tmpDict,thDict)
+            logMsg(info,"impl record is $impl")
+            valis (canonImplementation(Lc,Access,conTp,impl),declareImplementation(tmpDict,Lc,conTp))
+          }
+          case noGood(eM,eLc) do {
+            logMsg(info,"type $conTp does not subsume $contractType");
+            abort with (eM,eLc)
+          }
+        }
+      } else {
+        logMsg(info,"cannot find contract spec for $Nm")
+      }
+
+      abort with ("not implemented",Lc)
+    }
+
     fun phase0([],tmpDict) is good(tmpDict)
      |  phase0([E,..Grp],tmpDict) is 
           switch E in {
-            case (_,expsion,Vars) is 
-              phase0(Grp,rightFold((V,Dc)=>defineVar(Dc,V,typeVar()),tmpDict,Vars))
-            case (D,tipe,Tps) is
+            case (Def,_,expsion,Vars) is 
+              phase0(Grp,rightFold((V,Dc)=>defineVar(Dc,locOf(Def),V,typeVar()),tmpDict,Vars))
+            case (D,_,tipe,Tps) is
               switch D in {
-                case isAlgebraicTypeDef(_,Lhs,_) is 
+                case isAlgebraicTypeDef(ALc,TNm,Lhs,_) is 
                   more(typeTemplate(Lhs,tmpDict),
-                    ((TNm,TT))=>phase0(Grp,introduceType(tmpDict,TNm,TT)))
+                    (TT)=>phase0(Grp,introduceType(tmpDict,ALc,TNm,TT)))
+                case isContractDef(CLc,CNm,_,_) is
+                  more(introduceContract(D,tmpDict),(nxDict)=>phase0(Grp,nxDict))
+                case _ default is noGood("Cannot understand $D/$Tps in phase0",locOf(D))
               }
           }
 
-
     fun phaseI([],thDict,tmpDict,soFar) is good((tmpDict,soFar))
-     |  phaseI([(Def, expsion, Defnd),..rest],thDict,tmpDict,soFar) is valof{
-          def item is switch Def in {
+     |  phaseI([(Def, Access, expsion, Defnd),..rest],thDict,tmpDict,soFar) is good computation{
+          def (el,d) is valof (switch Def in {
             case isDefDef(_,isEquation(Lc,Lhs,Rhs)) is 
-              varCheck(Lc,Lhs,Rhs,tmpDict,thDict,(L,M,N)=>canonDef(L,M,N))
+              varCheck(Lc,Lhs,Rhs,tmpDict,thDict,(L,M,N)=>canonDef(L,Access,M,N))
             case isVarDef(Lc,isEquation(_,Lhs,Rhs)) is
-              varCheck(Lc,Lhs,Rhs,tmpDict,thDict,(L,M,N)=>canonVar(L,M,N))
+              varCheck(Lc,Lhs,Rhs,tmpDict,thDict,(L,M,N)=>canonVar(L,Access,M,N))
             case isFunDef(Lc,Eqns) is
-              more(definedFunName(Def),(Nm)=>funCheck(Lc,Nm,Eqns,tmpDict,thDict))
-          }
-          valis more(item,((el,d))=>phaseI(rest,thDict,d,[soFar..,el]))
+              more(definedFunName(Def),(Nm)=>funCheck(Lc,Access,Nm,Eqns,tmpDict,thDict))
+            case isImplementation(Lc,Tp,Body) is
+              implementationCheck(Lc,Access,Tp,Body,tmpDict,thDict)
+            case _ default is noGood("cannot understand $Def",locOf(Def))
+          })
+          valis valof phaseI(rest,thDict,d,[soFar..,el])
         }
-     | phaseI([(Def,tipe,TpNms),..rest],thDict,tmpDict,soFar) is valof{
-        if (any of X where X in TpNms) has value Tp and findType(tmpDict,Tp) has value typeIs(Type) then {
-          def (T,Q) is stripQuants(Type,dictionary of [],(Nm,Mp)=>Mp[with Nm->iBvar(Nm)],skolemize)
-          switch Def in {
-            case isAlgebraicTypeDef(Lc,Lhs,Rhs)do {
-              def conLhs is astFold((soF,C)=>more(soF,
+     | phaseI([(Def,Access,tipe,TpNms),..rest],thDict,tmpDict,soFar) is switch Def in {
+        case isAlgebraicTypeDef(Lc,Tp,Lhs,Rhs) is valof {
+          if findType(tmpDict,Tp) has value typeIs{tipe=Type} then {
+            def (T,Q) is stripQuants(Type,dictionary of [],(Nm,Mp)=>Mp[with Nm->iBvar(Nm)],skolemize)
+
+            def conLhs is astFold((soF,C)=>more(soF,
                 (sF)=>more(parseConstructor(C,tmpDict,Q,T),
-                  ((CNm,Ctp))=>good(list of [(CNm,rightFold(((K,_),conT)=>iUniv(K,conT),Ctp,Q)),..sF]))),
+                  ((CNm,CLc,Ctp))=>good(list of [(CNm,CLc,rightFold(((K,_),conT)=>iUniv(K,conT),Ctp,Q)),..sF]))),
                 good(list of []),"or",Rhs)
-              valis more(conLhs,(conDefs)=>valof{
-                def nxtDict is rightFold(((K,KT),D)=>defineConstructor(D,K,KT),tmpDict,conDefs)
-                valis phaseI(rest,thDict,nxtDict,soFar)
-              })
-            }
-          }
-          valis phaseI(rest,thDict,tmpDict,soFar)
-        } else
-          valis noGood("Cannot find types associated with $TpNms",locOf(Def))
-     }
+            valis more(conLhs,(conDefs)=>valof{
+              def nxtDict is rightFold(((K,CLc,KT),D)=>defineConstructor(D,CLc,K,KT),tmpDict,conDefs)
+              valis phaseI(rest,thDict,nxtDict,soFar)
+            })
+          } else
+          valis noGood("Cannot find types associated with $TpNms",Lc)
+        }
+        case isContractDef(Lc,Nm,Tp,Body) is valof {
+          if findContract(tmpDict,Nm) has value contractEntry{tipe=CTp;spec=CSpec} then {
+              valis phaseI(rest,thDict,tmpDict,[soFar..,canonContract(Lc,Access,Nm,CTp,CSpec)])
+          } else
+          valis noGood("Cannot find contract associated with $Nm",Lc)
+        }
+      }
 
     fun phaseII([],thDict,soFar) is good((soFar,thDict))
      |  phaseII([cDef,..moreCanon],thDict,soFar) is 
           more(generalizeDef(cDef,thDict),((gDef,thDict1))=>phaseII(moreCanon,thDict1,list of [soFar..,gDef]))
 
-    fun generalizeDef(canonVar(Lc,Ptn,Val),thDict) is good((canonVar(Lc,Ptn,Val),ptnVars(defineVar,thDict,Ptn)))
-     |  generalizeDef(canonDef(Lc,Ptn,Val),thDict) is 
-          good((canonDef(Lc,Ptn substitute { tipe = generalizeType(Ptn.tipe,thDict)},Val),
-                                            ptnVars((D,N,T)=>defineVar(D,N,generalizeType(T,thDict)),thDict,Ptn)))
+    fun generalizeDef(canonVar(Lc,A,Ptn,Val),thDict) is good((canonVar(Lc,A,Ptn,Val),ptnVars(defineVar,thDict,Ptn)))
+     |  generalizeDef(canonDef(Lc,A,Ptn,Val),thDict) is 
+          good((canonDef(Lc,A,Ptn substitute { tipe = generalizeType(Ptn.tipe,thDict)},Val),
+                                            ptnVars((D,VLc,N,T)=>defineVar(D,VLc,N,generalizeType(T,thDict)),thDict,Ptn)))
+     |  generalizeDef(canonImplementation(Lc,A,Tp,Impl),thDict) is valof{
+          def conTp is generalizeType(Tp,thDict)
+          logMsg(info,"thDict after declaring $Tp is $(declareImplementation(thDict,Lc,conTp))")
+          valis good((canonImplementation(Lc,A,conTp,Impl), declareImplementation(thDict,Lc,conTp)))
+        }
+     |  generalizeDef(canonContract(Lc,A,Nm,Tp,Sp),thDict) is good computation {
+          logMsg(info,"generalizing contract: $Tp, spec: $Sp")
+          def GTp is generalizeType(Tp,thDict)
+          def GSpec is generalizeType(Sp,thDict)
+          logMsg(info,"next dict is $(declareContract(thDict,Lc,Nm,GTp,GSpec))") 
+          valis (canonContract(Lc,A,Nm,GTp,GSpec),declareContract(thDict,Lc,Nm,GTp,GSpec))
+        }
     
     fun checkGroup(Grp,thDict) is good computation {
       def tmpDict is valof phase0(Grp,thDict)
@@ -330,12 +392,12 @@ check is package{
             ((grp,nxDict)) => cG(R,soFar++grp,nxDict))
       } in cG(Grps,list of [],thDict)
       
-  } in checkGroups(groups,Dct)
+  } in checkGroups(groups,stackDict(Dct))
 
   private
-  ptnVars has type ((dict,string,iType)=>dict,dict,cPtn)=>dict
+  ptnVars has type ((dict,srcLoc,string,iType)=>dict,dict,cPtn)=>dict
   fun ptnVars(F,D,Pt) is switch Pt in {
-    case pVar{tipe = T; name = N} is F(D,N,T)
+    case pVar{loc=Lc;tipe = T; name = N} is F(D,Lc,N,T)
     case _ default is D
     case pTuple{elements = V} is rightFold((E,St)=>ptnVars(F,St,E),D,V)
     case pFace{values = V} is rightFold(((_,E),St)=>ptnVars(F,St,E),D,V)
@@ -348,7 +410,39 @@ check is package{
                                             or El matches isAssignment(_,_,_)
                                             or El matches isTypeAssignment(_,_,_)))
 
-  fun thetaRecord(Lc,A,E,D) is noGood("not implemented ",Lc)
+  fun thetaRecord(Lc,A,E,D) is good computation {
+    def (thDict,Stmts) is valof thetaContents(A,D)
+    def exports is reduction (union) of {all exported(S) where S in Stmts}
+    def recType is sealType(Stmts)
+    perform subsume(D,Lc)(E,recType)
+    valis cLet {
+      loc=Lc;
+      tipe=recType;
+      env=thDict;
+      stmts=Stmts;
+      bnd=sealRecord(Lc,recType,Stmts)
+    }
+  }
+
+  fun sealType(Stmts) is let {
+    fun collectField(canonDef(_,pUblic,P,_),iFace(Fields,Types)) is 
+          iFace(leftFold((FD,cVar{name=VN;tipe=VT})=>FD[with VN->VT],Fields,exported(P)),Types)
+     |  collectField(canonVar(_,pUblic,P,_),iFace(Fields,Types)) is 
+          iFace(leftFold((FD,cVar{name=VN;tipe=VT})=>FD[with VN->VT],Fields,exported(P)),Types)
+     |  collectField(canonAlgegraic(_,pUblic,Tp,Cons),iFace(Fields,Types)) where typeName(Tp) has value ATp is
+          iFace(leftFold((FD,(K,T))=>FD[with K->T],Fields,Cons),Types[with ATp->Tp])
+     |  collectField(Entry,Tp) is Tp trace "Ignoring statement $Entry in sealType"
+  } in rightFold(collectField,iFace(dictionary of [],dictionary of []),Stmts)
+
+  fun sealRecord(Lc,RecType,Stmts) is let {
+      fun collectField(canonDef(_,pUblic,P,_),Rec) is 
+          Rec substitute { values = leftFold((FD,V)=>FD[with V.name->V],Rec.values,exported(P)) }
+     |  collectField(canonVar(_,pUblic,P,_),Rec) is 
+          Rec substitute { values = leftFold((FD,V)=>FD[with V.name->V],Rec.values,exported(P)) }
+     |  collectField(canonAlgegraic(_,pUblic,Tp,Cons),Rec) where typeName(Tp) has value ATp is
+          Rec substitute { types = (Rec.types)[with ATp->Tp] } 
+     |  collectField(Entry,Tp) is Tp trace "Ignoring statement $Entry in sealRecord"
+  } in rightFold(collectField,cFace{loc=Lc;tipe=RecType;values=dictionary of [];types=dictionary of []},Stmts)
 
   fun verifyType(Lc,aTp,eTp,D,O,Succ) is valof {
     switch subsume(D,Lc)(eTp,aTp) in {
@@ -377,7 +471,7 @@ check is package{
       }
    |  typeOfPtn(asTuple(Lc,"()",A),E,D,O) is typeOfTuplePtn(Lc,A,E,D,O)
    |  typeOfPtn(asTuple(Lc,"{}",A),E,D,O) is typeOfRecordPtn(Lc,A,E,D,O)
---   |  typeOfExp(asTuple(Lc,"[]",A),E,D,O) is typeOfSequencePtn(Lc,A,E,D,O)
+--   |  typeOfPtn(asTuple(Lc,"[]",A),E,D,O) is typeOfSequencePtn(Lc,A,E,D,O)
    |  typeOfPtn(T matching asTuple(Lc,Nm,A),E,D,O) where ptnPlugins[(Nm,size(A))] has value plugin is plugin(T,E,D,O)
    |  typeOfPtn(T matching asApply(Lc,asName(_,Nm),asTuple(_,"()",A)),E,D,O) where ptnPlugins[(Nm,size(A))] has value plugin is
         plugin(T,E,D,O)
@@ -385,7 +479,8 @@ check is package{
    |  typeOfPtn(T,E,D,O) is noGood("Cannot understand pattern $T",locOf(T))
 
   private
-  fun typeOfArgPtns(P,E,D,O) is typeOfPtn(P,E,D,O)
+  fun typeOfArgPtns(asTuple(Lc,"()",A),E,D,O) is typeOfTuplePtn(Lc,A,E,D,O)
+   |  typeOfArgPtns(P,E,D,O) default is typeOfPtn(P,E,D,O)
 
   private
   fun typeOfPtnVar(Nm,Lc,E,D) where findVar(D,Nm) has value conEntry{ tipe = Tp} is valof {
@@ -408,7 +503,7 @@ check is package{
             valis good((pVar{loc=Lc;tipe=E;name=Nm},D))
         }
       }
-   |  typeOfPtnVar(Nm,Lc,E,D) is good((pVar{loc=Lc;tipe=E;name=Nm},defineVar(D,Nm,E)))
+   |  typeOfPtnVar(Nm,Lc,E,D) is good((pVar{loc=Lc;tipe=E;name=Nm},defineVar(D,Lc,Nm,E)))
 
   private
   fun typeOfTuplePtn(Lc,A,E,D,O) is valof{
@@ -457,16 +552,16 @@ check is package{
    |  typeOfConstructorPtn(Lc,Nm,A,E,D,O) is noGood("Cannot find definition of constructor $Nm in $D",Lc)
 
   private
-  fun typeOfRecordPtn(Lc,A,E,D,O) is valof (good computation {
+  fun typeOfRecordPtn(Lc,A,E,D,O) is good computation {
     def elTypes is dictionary of {all Nm->eTp where El in A and ((El matches isEqual(_,isIden(_,Nm),Rhs) and
                                                                       typeVar() matches eTp) or 
                                                                  (El matches isAssignment(_,isIden(_,Nm),Rhs) and 
                                                                   iRfTp(typeVar()) matches eTp))}
     def typeEls is valof goodIterate(A,(isTypeAssignment(_,Nm,eTp))=>more(parseType(eTp,D),(pTp)=>good((Nm,pTp))))
 
-    valis switch subsume(D,Lc)(E,iFace(elTypes,typeEls)) in {
-      case noGood(M,_) is raise ("record not consistent with expected type $E\nbecause #M",Lc)
-      case good(_) is valof {
+    switch subsume(D,Lc)(E,iFace(elTypes,typeEls)) in {
+      case noGood(M,_) do abort with ("record not consistent with expected type $E\nbecause #M",Lc)
+      case good(_) do {
         var ptnD := D
         var els := dictionary of []
 
@@ -479,7 +574,7 @@ check is package{
                   ptnD := xD
                 }
                 case noGood(M,mLc) do
-                  raise (M,mLc)
+                  abort with (M,mLc)
               }
             }
             case isAssignment(_,isIden(_,Nm),Rhs) where elTypes[Nm] has value iRfTp(elType) do {
@@ -489,7 +584,7 @@ check is package{
                   ptnD := xD
                 }
                 case noGood(M,mLc) do
-                  valis noGood(M,mLc)
+                  abort with (M,mLc)
               }
             }
             case isTypeAssignment(_,Nm,Rhs) do {
@@ -498,10 +593,10 @@ check is package{
           }
         }
 
-        valis good((pFace{loc=Lc;tipe=E;values=els;types=typeEls},ptnD))
+        valis (pFace{loc=Lc;tipe=E;values=els;types=typeEls},ptnD)
       }
     }
-  })
+  }
 
   private
   fun typeOfGuardedPtn(isWherePtn(Lc,P,C),E,D,O) is valof{

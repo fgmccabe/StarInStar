@@ -29,6 +29,22 @@ nogood is package{
 
   } in unwrap(_iterate(L,check,ContinueWith(good([]))))
 
+
+  goodFilter has type for all i,o,x,y such that 
+    (i,()<=x,(x)=>good of y) => good of o where
+      iterable over i determines x and
+      sequence over o determines y
+  fun goodFilter(L,T,F) is let{
+    fun check(X,ContinueWith(good(SoFar))) where X matches T() is switch F(X) in {
+          case good(G) is ContinueWith(good([SoFar..,G]))
+          case noGood(M,Lc) is NoMore(noGood(M,Lc))
+        }
+     |  check(_,SoFar) is SoFar 
+    fun unwrap(ContinueWith(X)) is X
+     |  unwrap(NoMore(X)) is X
+
+  } in unwrap(_iterate(L,check,ContinueWith(good([]))))
+
   goodSequence has type for all l,m,x such that 
     (l) => good of m where
     sequence over l determines good of x and

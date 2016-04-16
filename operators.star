@@ -249,7 +249,7 @@ operators is package{
     opTable := defineAssocPrefix("for all",1005,opTable)
     opTable := defineRight(",",1000,opTable)
     opTable := defineNonAssocInfix("default",1000,opTable)
-    opTable := defineNonAssocPrefix("raise",1000,opTable)
+    opTable := defineNonAssocPrefix("abort with",1000,opTable)
     opTable := defineNonAssocPrefix("query",1000,opTable)
     opTable := defineNonAssocPrefix("import",1000,opTable)
     opTable := defineNonAssocPrefix("memo",999,opTable)

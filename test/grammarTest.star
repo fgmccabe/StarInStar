@@ -6,9 +6,25 @@ worksheet{
   import opgrammar;
   import ast
 
-  def tokens is tokenize("file:sampleTerm")
+  fun parse(Fn) is valof{
+    def tokens is tokenize(Fn)
+    valis term(tokens,2000,standardOps)
+  }
 
-  show term(tokens,2000,standardOps)
+  prc force(Fl) do {    
+    logMsg(info,"tokens from $Fl")
 
-  show term(tokenize("file:testInnerOper"),2000,standardOps)
+    var TkSt := tokenize(Fl)
+
+    while nextToken(TkSt,standardOps) matches (nxt,NextSt) and nxt!=terminal do {
+      logMsg(info,"Token: $nxt")
+      TkSt := NextSt
+    }
+  }
+
+  show parse("file:sampleTerm")
+
+  show parse("file:testInnerOper")
+
+  show parse("file:arithTest.star")
 }

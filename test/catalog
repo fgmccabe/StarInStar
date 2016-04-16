@@ -3,7 +3,6 @@ catalog{
     "ast" -> "../ast.star";
     "good"-> "../good.star";
     "canonical"-> "../canonical.star";
-    "dict"-> "../dict.star";
     "errors" -> "../errors.star";
     "freshen"-> "../freshen.star";
     "lexer" -> "../lexer.star";
