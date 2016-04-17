@@ -80,6 +80,8 @@ astUtils is package{
 
   ptn isDefault(Lc,Trm) from asApply(Lc,asName(_,"default"),asTuple(_,"()",[Trm]))
 
+  ptn isExpPtn(Lc,Exp) from isUnary(Lc,".",Exp)
+
   ptn isNameOfType(Lc,Nm) from isIden(Lc,Nm)
    |  isNameOfType(Lc,Nm) from isBinary(Lc,"of",isIden(_,Nm),_)
    |  isNameOfType(Lc,Nm) from isBinary(Lc,"over",isIden(_,Nm),_)

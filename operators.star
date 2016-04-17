@@ -333,6 +333,7 @@ operators is package{
     opTable := defineNonAssocPrefix("$",75,opTable)
     opTable := defineNonAssocPrefix("%",75,opTable)
     opTable := defineNonAssocPrefix("?",75,opTable)
+    opTable := defineNonAssocPrefix(".",75,opTable)
     opTable := defineNonAssocPrefix("%%",75,opTable)
     opTable := defineNonAssocPrefix("\#$",50,opTable)
     opTable := defineNonAssocPrefix("\#*",50,opTable)

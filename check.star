@@ -81,16 +81,7 @@ check is package{
   }
 
   private
-  fun typeOfVar(Nm,Lc,E,D) where findVar(D,Nm) has value conEntry{tipe = Tp} is valof {
-        def varType is freshen(Tp)
-          switch subsume(D,Lc)(varType,iConTp(iTuple([]),E)) in {
-            case good(_) do
-              valis good(cApply{loc=Lc;tipe=E;op=cVar{loc=Lc;tipe=varType;name=Nm};arg=cTuple{loc=Lc;tipe=iType([]);elements=[]}})
-            case noGood(MM,_) do
-              valis noGood("$Nm not consistent with expected type $E\nbecause #MM",Lc)
-          }
-        }
-   |  typeOfVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{ tipe = Tp} is valof {
+  fun typeOfVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{ tipe = Tp} is valof {
         switch subsume(D,Lc)(E,freshen(Tp)) in {
           case noGood(M,_) do 
             valis noGood("$Nm not consistent with expected type $E\nbecause #M",Lc)
@@ -472,10 +463,11 @@ check is package{
    |  typeOfPtn(asTuple(Lc,"()",A),E,D,O) is typeOfTuplePtn(Lc,A,E,D,O)
    |  typeOfPtn(asTuple(Lc,"{}",A),E,D,O) is typeOfRecordPtn(Lc,A,E,D,O)
 --   |  typeOfPtn(asTuple(Lc,"[]",A),E,D,O) is typeOfSequencePtn(Lc,A,E,D,O)
+   |  typeOfPtn(isExpPtn(Lc,Exp),E,D,O) is more(typeOfExp(Exp,E,D,O),(EE)=>good((pExp{loc=Lc;tipe=E;val=EE},D)))
    |  typeOfPtn(T matching asTuple(Lc,Nm,A),E,D,O) where ptnPlugins[(Nm,size(A))] has value plugin is plugin(T,E,D,O)
    |  typeOfPtn(T matching asApply(Lc,asName(_,Nm),asTuple(_,"()",A)),E,D,O) where ptnPlugins[(Nm,size(A))] has value plugin is
         plugin(T,E,D,O)
-   |  typeOfPtn(asApply(Lc,asName(_,Nm),A),E,D,O) is typeOfConstructorPtn(Lc,Nm,A,E,D,O)
+   |  typeOfPtn(asApply(Lc,Op,A),E,D,O) is typeOfApplyPtn(Lc,Op,A,E,D,O)
    |  typeOfPtn(T,E,D,O) is noGood("Cannot understand pattern $T",locOf(T))
 
   private
@@ -483,16 +475,7 @@ check is package{
    |  typeOfArgPtns(P,E,D,O) default is typeOfPtn(P,E,D,O)
 
   private
-  fun typeOfPtnVar(Nm,Lc,E,D) where findVar(D,Nm) has value conEntry{ tipe = Tp} is valof {
-        def varType is freshen(Tp)
-          switch subsume(D,Lc)(varType,iConTp(iTuple([]),E)) in {
-            case good(_) do
-              valis good((pApply{loc=Lc;tipe=E;op=cVar{loc=Lc;tipe=varType;name=Nm};arg=emptyPtnTuple(Lc)},D))
-            case noGood(MM,_) do
-              valis noGood("$Nm not consistent with expected type $E\nbecause #MM",Lc)
-          }
-        }
-   |  typeOfPtnVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{ tipe = Tp} is valof {
+  fun typeOfPtnVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{ tipe = Tp} is valof {
         def varType is freshen(Tp)
 
         switch subsume(D,Lc)(varType,E) in {
@@ -535,21 +518,13 @@ check is package{
   }
 
   private
-  fun typeOfConstructorPtn(Lc,Nm,A,E,D,O) where findVar(D,Nm) has value conEntry{tipe=Tp} is 
-    valof {
-      def aT is typeVar()
-      switch subsume(D,Lc)(freshen(Tp),iConTp(aT,E)) in {
-        case good(_) do {
-          switch typeOfPtn(A,aT,D,O) in {
-            case good((ArgPtn,ArgDict)) do
-              valis good((pApply{loc=Lc; tipe = E; op=cVar{loc=Lc;tipe=iConTp(aT,E);name=Nm}; arg=ArgPtn},ArgDict))
-          }
-        }
-        case noGood(xLc,xRs) do
-          valis noGood(xLc,xRs)
-      }
-    }
-   |  typeOfConstructorPtn(Lc,Nm,A,E,D,O) is noGood("Cannot find definition of constructor $Nm in $D",Lc)
+  fun typeOfApplyPtn(Lc,Op,A,E,D,O) is good computation {
+    def aT is typeVar()
+    def Tp is iPtTp(aT,E)
+    def op is valof typeOfExp(Op,Tp,D,O)
+    def (arg,argDict) is valof typeOfPtn(A,aT,D,O)
+    valis (pApply{loc=Lc;tipe=E;op=op;arg=arg},argDict)
+  }
 
   private
   fun typeOfRecordPtn(Lc,A,E,D,O) is good computation {

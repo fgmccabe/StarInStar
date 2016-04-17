@@ -162,6 +162,7 @@ canonical is package{
     or pDecimal{loc has type srcLoc; tipe has type iType; dval has type decimal}
     or pChar{loc has type srcLoc; tipe has type iType; cval has type char}
     or pString{loc has type srcLoc; tipe has type iType; sval has type string}
+    or pExp{loc has type srcLoc; tipe has type iType; val has type cExp}
     or pTuple{loc has type srcLoc; tipe has type iType; elements has type list of cPtn}
     or pFace{loc has type srcLoc; tipe has type iType; 
               values has type dictionary of (string,cPtn); types has type dictionary of (string,iType)}
@@ -185,6 +186,7 @@ canonical is package{
     case pDecimal{dval=Dx} is ppStr(Dx as string)
     case pChar{cval=Cx} is ppSequence(0,cons of [ ppStr("'"), ppStr(Cx as string), ppStr("'")])
     case pString{sval=Sx} is ppSequence(0,cons of [ ppStr("\""), ppStr(Sx), ppStr("\"")])
+    case pExp{val=Ex} is ppDisp(Ex)
     case pTuple{elements=Tpl} is ppSequence(0,[ppStr("("),
                 ppSequence(0,interleave(cons of { all showPtn(El,999) where El in Tpl},ppStr(", "))),
                   ppStr(")")])
@@ -299,9 +301,6 @@ canonical is package{
   type varEntry is varEntry{
     loc has type srcLoc
     tipe has type iType
-  } or conEntry{
-    loc has type srcLoc
-    tipe has type iType
   }
 
   fun showVarEntry(Nm,varEntry{tipe=Tp}) is 
@@ -399,13 +398,13 @@ canonical is package{
   fun defineVar(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Lc;tipe=Tp}]}
 
   defineConstructor has type (dict,srcLoc,string,iType) => dict
-  fun defineConstructor(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->conEntry{loc=Lc;tipe=Tp}]}
+  fun defineConstructor(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Lc;tipe=Tp}]}
 
   introduceType has type (dict,srcLoc,string,iType)=>dict
   fun introduceType(Dict,Lc,Nm,Tp) is declareType(Dict,Nm,typeIs{loc=Lc;tipe=Tp})
 
   fun typeOfField(Dict,algebraicEntry{constructors=Cons},Nm) is valof{
-    for C in Cons and findVar(Dict,C) has value conEntry{tipe=Con} do {
+    for C in Cons and findVar(Dict,C) has value varEntry{tipe=Con} do {
       if preCheck(Con,Nm) and findFieldInCon(freshen(Con),Nm) has value Tp then {
         valis some(Tp)
       }
@@ -417,7 +416,7 @@ canonical is package{
   fun declareAlgebraic(Dict,Lc,Nm,Tp,Cons) is valof{
     var D := declareType(Dict,Nm,algebraicEntry{loc=Lc;tipe=Tp;constructors=list of { all Ky where  Ky->_ in Cons}})
     for Ky->ConTp in Cons do
-      D := declareVar(D,Ky,conEntry{loc=Lc;tipe=ConTp})
+      D := declareVar(D,Ky,varEntry{loc=Lc;tipe=ConTp})
     valis D
   }
 
