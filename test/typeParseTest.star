@@ -10,6 +10,8 @@ worksheet{
   import canonical;
   import freshen;
   import parseForTest
+  import stdTypes
+  import good
 
 	-- test the type parser
 
@@ -17,7 +19,7 @@ worksheet{
 
   show "parse ($P) for types"
 
-  var D := declareType(stdDict,"c",typeIs(iUniv("t",iTpExp(iType("c"),iBvar("t")))))
+  var D := declareType(stdDict,"c",typeIs{loc=missing;tipe=iUniv("t",iTpExp(iType("c"),iBvar("t")))})
 
   show parseType(P,D)
 
@@ -27,9 +29,9 @@ worksheet{
 
   show parseType(P2,D)
 
-  show freshenForUse(parseType(P2,D))
+  show more(parseType(P2,D),fn T=>good(freshen(T)))
 
-  D := declareAlgebraic(D,"option",iUniv("t",iTpExp(iType("option"),iBvar("t"))), 
+  D := declareAlgebraic(D,missing,"option",iUniv("t",iTpExp(iType("option"),iBvar("t"))), 
       dictionary of ["none"->iUniv("t",iTpExp(iType("option"),iBvar("t"))),
                      "some"->iUniv("t",iConTp(iBvar("t"),iTpExp(iType("option"),iBvar("t"))))])
 

@@ -231,7 +231,8 @@ types is package{
   }
 
   fun implName(iContract(Nm,At,_)) is let {
-    fun addInTp(some(SoF),Tp) is typeName(Tp) has value TNm ? some(SoF++"#"++TNm) : none
-     |  addInTp(St,_) default is St
-  } in leftFold(addInTp,some("$"++Nm),At)
+        fun addInTp(some(SoF),Tp) is typeName(Tp) has value TNm ? some(SoF++"#"++TNm) : none
+         |  addInTp(St,_) default is St
+      } in leftFold(addInTp,some("$"++Nm),At)
+   |  implName(iUniv(_,Tp)) is implName(Tp)
 }

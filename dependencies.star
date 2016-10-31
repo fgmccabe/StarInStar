@@ -13,7 +13,7 @@ dependencies is package{
   dependencies has type (list of ast) => list of astGroup
   fun dependencies(Th) is let{
     def definitions is programDefs(Th)
-    def groups is topological(definitions) trace "groups"
+    def groups is topological(definitions)
     fun projectCat(D) is someValue(any of C where (C,_) in D)
     fun projectDefs(D) is set of {all Df where (_,Df) in D}
   } in (list of { all list of {all (T,A,projectCat(D),projectDefs(D)) where topDef{orig=(A,T);definitions=D} in group} where group in groups})

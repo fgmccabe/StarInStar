@@ -182,22 +182,19 @@ parseType is package{
     valis good(reslt)
   }
 
-  fun introduceContract(isContractDef(Lc,CNm,Spec,Body),D) is good computation {
+  fun parseContract(isContractDef(Lc,CNm,Spec,Body),D) is good computation {
     def TQ is valof contractSpecVars(Spec,dictionary of [])
     def (Nm,contrct) is valof parseContractSpec(Spec,D,TQ)
     def body is valof parseRecordType(Body,D,TQ)
-    def entry is contractEntry{loc=Lc;tipe=contrct;spec=rebind(iTuple([contrct,body]),TQ)}
-    var Dict := D substitute { contracts = D.contracts[with Nm->entry]}
 
-    if body matches iFace(Fields,Types) then {
-      for K->T in Fields do 
-        Dict := defineVar(Dict,Lc,K,rebind(iConstrained(T,isOver(contrct)),TQ))
+    if body matches iFace(Flds,_) then {
+      def mtds is dictionary of {all K->rebind(iConstrained(T,isOver(contrct)),TQ) where K->T in Flds}
+      valis (Nm,contractEntry{loc=Lc;tipe=rebind(contrct,TQ);spec=rebind(iTuple([contrct,body]),TQ);methods=mtds})
     }
-
-    valis Dict
+    else
+      abort with ("not a valid contract specification: $body",Lc)
   }
 
-  private
   fun rebind(Tp,Q) is rightFold(((K,_),T)=>iUniv(K,T),Tp,Q)
 
   private

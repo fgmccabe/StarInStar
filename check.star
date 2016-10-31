@@ -34,10 +34,7 @@ check is package{
   typeOfExp has type (ast,iType,dict,dict) => good of cExp
   fun typeOfExp(asName(Lc,Nm),E,D,O) is typeOfVar(Nm,Lc,E,D)
    |  typeOfExp(asInteger(Lc,I),E,D,O) is verifyType(Lc,iType("integer"),E,D,O,()=>good(cInt{tipe=E;loc=Lc;ival=I}))
-   |  typeOfExp(asLong(Lc,Lx),E,D,O) is verifyType(Lc,iType("long"),E,D,O,()=>good(cLong{tipe=E;loc=Lc;lval=Lx}))
    |  typeOfExp(asFloat(Lc,Dx),E,D,O) is verifyType(Lc,iType("float"),E,D,O,()=>good(cFloat{tipe=E;loc=Lc;fval=Dx}))
-   |  typeOfExp(asDecimal(Lc,Dx),E,D,O) is verifyType(Lc,iType("decimal"),E,D,O,()=>good(cDecimal{tipe=E;loc=Lc;dval=Dx}))
-   |  typeOfExp(asChar(Lc,Cx),E,D,O) is verifyType(Lc,iType("char"),E,D,O,()=>good(cChar{tipe=E;loc=Lc;cval=Cx}))
    |  typeOfExp(asString(Lc,Sx),E,D,O) is verifyType(Lc,iType("string"),E,D,O,()=>good(cString{tipe=E;loc=Lc;sval=Sx}))
    |  typeOfExp(asTuple(Lc,"()",list of [V]),E,D,O) is -- only unwrap one paren
       	V matches asTuple(_,"()",A) ? typeOfTuple(Lc,A,E,D,O) : typeOfExp(V,E,D,O)
@@ -63,6 +60,7 @@ check is package{
       }
    |  typeOfExp(T,E,D,O) is noGood("Cannot understand expression $T",locOf(T))
 
+  typeOfArguments has type (ast,iType,dict,dict) => good of cExp
   fun typeOfArguments(asTuple(Lc,"()",A),E,D,O) is typeOfTuple(Lc,A,E,D,O)
    |  typeOfArguments(X,E,D,O) is typeOfExp(X,E,D,O)
 
@@ -81,12 +79,13 @@ check is package{
   }
 
   private
-  fun typeOfVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{ tipe = Tp} is valof {
-        switch subsume(D,Lc)(E,freshen(Tp)) in {
+  fun typeOfVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{proto=Proto} is valof {
+        def frshnd is freshVar(Lc,Proto) 
+        switch subsume(D,Lc)(E,frshnd.tipe) in {
           case noGood(M,_) do 
             valis noGood("$Nm not consistent with expected type $E\nbecause #M",Lc)
           case good(_) do 
-            valis good(cVar{loc=Lc;tipe=E;name=Nm})
+            valis good(frshnd)
         }
       }
    |  typeOfVar(Nm,Lc,E,F) is noGood("$Nm not declared",Lc)
@@ -147,6 +146,23 @@ check is package{
       }
    |  typeOfMemo(T,E,D,O) default is noGood("$T not a valid memo expression",locOf(T))
 
+  private
+  fun typeOfPttrn(isPttrnAst(Lc,R,P),E,D,O) is good computation{
+        def ptnType is typeVar()
+        def resType is typeVar()
+
+        switch subsume(D,Lc)(E,iPtTp(resType,ptnType)) in {
+          case good(_) do {
+            def (Ptn,lmDict) is valof typeOfPtn(P,ptnType,D,O)
+            def Res is valof typeOfExp(R,resType,lmDict,O)
+            valis cPttrn{tipe=E;loc=Lc;ptrn=Ptn;value=Res}
+          }
+          case noGood(M,_) do
+            abort with ("pattern not valid here\nbecause #M",Lc)
+        }
+      }
+   |  typeOfPttrn(T,E,D,O) default is noGood("$T is not a valid lambda pattern",locOf(T))
+
 	private
   fun typeOfTuple(Lc,A,E,D,O) is valof{
     def elTypes is map((_)=>typeVar(),A)
@@ -200,6 +216,12 @@ check is package{
       }
 
   private
+  fun typeOfCondExp(T,E,D,O) is good computation {
+    def (C,_) is valof typeOfCond(T,D,O)
+    valis cIsTrue{loc=locOf(C);cond=C;tipe=booleanType}
+  }
+
+  private
   fun typeOfLet(isLetTerm(Lc,Body,Bnd),E,D,O) is 
     more(thetaContents(Body,D),((thDict,Stmts))=>
               more(typeOfExp(Bnd,E,thDict,O),(bndExp)=>good(cLet{loc=Lc;tipe=E;env=thDict;stmts=Stmts;bnd=bndExp})))
@@ -224,8 +246,8 @@ check is package{
 
       -- construct the function type and the dictionary to interpret the equations
       def fnType is valof{
-        if findVar(tmpDict,Fn) has value varEntry{tipe=T} then{
-          def (fT,M) is freshenForEvidence(T)
+        if findVar(tmpDict,Fn) has value varEntry{proto=Proto} then{
+          def (fT,M) is freshenForEvidence(Proto.tipe,dictionary of [])
           for tV->V in M do -- record the type vars in case explicitly mentioned in body of function
             funDict := declareType(funDict,tV,typeIs{loc=LLc;tipe=V})
           switch subsume(funDict,LLc)(iFnTp(lhsType,rhsType),fT) in {
@@ -271,7 +293,7 @@ check is package{
       def (Nm,contractType) is valof parseContractSpec(Tp,tmpDict,dictionary of [])
       logMsg(info,"Contract type $contractType")
 
-      if findContract(tmpDict,Nm) has value contractEntry{tipe=cTp;spec=spType} then {
+      if findContract(tmpDict,Nm) has value contractEntry{spec=spType} then {
         def iTuple([conTp,recType]) is freshen(spType)
         logMsg(info,"declared contract $conTp is $recType")
 
@@ -279,7 +301,7 @@ check is package{
           case good(_) do {
             logMsg(info,"subsumed type is $conTp, record type is $recType");
             def impl is valof typeOfExp(Body,recType,tmpDict,thDict)
-            logMsg(info,"impl record is $impl")
+            logMsg(info,"impl record is $impl, for contract $conTp")
             valis (canonImplementation(Lc,Access,conTp,impl),declareImplementation(tmpDict,Lc,conTp))
           }
           case noGood(eM,eLc) do {
@@ -298,14 +320,17 @@ check is package{
      |  phase0([E,..Grp],tmpDict) is 
           switch E in {
             case (Def,_,expsion,Vars) is 
-              phase0(Grp,rightFold((V,Dc)=>defineVar(Dc,locOf(Def),V,typeVar()),tmpDict,Vars))
+              phase0(Grp,rightFold((V,Dc)=>defineVar(Dc,V,cVar{loc=locOf(Def);name=V;tipe=typeVar()}),tmpDict,Vars))
             case (D,_,tipe,Tps) is
               switch D in {
                 case isAlgebraicTypeDef(ALc,TNm,Lhs,_) is 
                   more(typeTemplate(Lhs,tmpDict),
                     (TT)=>phase0(Grp,introduceType(tmpDict,ALc,TNm,TT)))
-                case isContractDef(CLc,CNm,_,_) is
-                  more(introduceContract(D,tmpDict),(nxDict)=>phase0(Grp,nxDict))
+
+                case isContractDef(_,_,_,_) is good computation{
+                  def (Nm,entry) is valof parseContract(D,tmpDict)
+                  valis valof phase0(Grp,declareContract(tmpDict,Nm,entry))
+                }
                 case _ default is noGood("Cannot understand $D/$Tps in phase0",locOf(D))
               }
           }
@@ -342,8 +367,8 @@ check is package{
           valis noGood("Cannot find types associated with $TpNms",Lc)
         }
         case isContractDef(Lc,Nm,Tp,Body) is valof {
-          if findContract(tmpDict,Nm) has value contractEntry{tipe=CTp;spec=CSpec} then {
-              valis phaseI(rest,thDict,tmpDict,[soFar..,canonContract(Lc,Access,Nm,CTp,CSpec)])
+          if findContract(tmpDict,Nm) has value contractEntry{tipe=CTp;spec=CSpec;methods=Mtds} then {
+              valis phaseI(rest,thDict,tmpDict,[soFar..,canonContract(Lc,Access,Nm,CTp,CSpec,Mtds)])
           } else
           valis noGood("Cannot find contract associated with $Nm",Lc)
         }
@@ -353,21 +378,23 @@ check is package{
      |  phaseII([cDef,..moreCanon],thDict,soFar) is 
           more(generalizeDef(cDef,thDict),((gDef,thDict1))=>phaseII(moreCanon,thDict1,list of [soFar..,gDef]))
 
-    fun generalizeDef(canonVar(Lc,A,Ptn,Val),thDict) is good((canonVar(Lc,A,Ptn,Val),ptnVars(defineVar,thDict,Ptn)))
+    fun generalizeDef(canonVar(Lc,A,Ptn,Val),thDict) is 
+          good((canonVar(Lc,A,Ptn,Val),ptnVars((D,VLc,N,T)=>
+                defineVar(D,N,cVar{loc=VLc;name=N;tipe=generalizeType(T,thDict)}),thDict,Ptn)))
      |  generalizeDef(canonDef(Lc,A,Ptn,Val),thDict) is 
           good((canonDef(Lc,A,Ptn substitute { tipe = generalizeType(Ptn.tipe,thDict)},Val),
-                                            ptnVars((D,VLc,N,T)=>defineVar(D,VLc,N,generalizeType(T,thDict)),thDict,Ptn)))
+                                            ptnVars((D,VLc,N,T)=>defineVar(D,N,cVar{loc=VLc;name=N;tipe=generalizeType(T,thDict)}),thDict,Ptn)))
      |  generalizeDef(canonImplementation(Lc,A,Tp,Impl),thDict) is valof{
           def conTp is generalizeType(Tp,thDict)
-          logMsg(info,"thDict after declaring $Tp is $(declareImplementation(thDict,Lc,conTp))")
           valis good((canonImplementation(Lc,A,conTp,Impl), declareImplementation(thDict,Lc,conTp)))
         }
-     |  generalizeDef(canonContract(Lc,A,Nm,Tp,Sp),thDict) is good computation {
-          logMsg(info,"generalizing contract: $Tp, spec: $Sp")
+     |  generalizeDef(canonContract(Lc,A,Nm,Tp,Sp,Mtds),thDict) is good computation {
           def GTp is generalizeType(Tp,thDict)
           def GSpec is generalizeType(Sp,thDict)
-          logMsg(info,"next dict is $(declareContract(thDict,Lc,Nm,GTp,GSpec))") 
-          valis (canonContract(Lc,A,Nm,GTp,GSpec),declareContract(thDict,Lc,Nm,GTp,GSpec))
+          def GMtds is dictionary of {all K->generalizeType(T,thDict) where K->T in Mtds}
+          def entry is contractEntry{loc=Lc;tipe=GTp;spec=GSpec;methods=GMtds}
+          def nxtDict is declareContract(thDict,Nm,entry)
+          valis (canonContract(Lc,A,Nm,GTp,GSpec,GMtds),nxtDict)
         }
     
     fun checkGroup(Grp,thDict) is good computation {
@@ -449,10 +476,7 @@ check is package{
   typeOfPtn has type (ast,iType,dict,dict) => good of ((cPtn,dict))
   fun typeOfPtn(asName(Lc,Nm),E,D,O) is typeOfPtnVar(Nm,Lc,E,D)
    |  typeOfPtn(asInteger(Lc,I),E,D,O) is verifyType(Lc,iType("integer"),E,D,O,()=>good((pInt{tipe=E;loc=Lc;ival=I},D)))
-   |  typeOfPtn(asLong(Lc,Lx),E,D,O) is verifyType(Lc,iType("long"),E,D,O,()=>good((pLong{tipe=E;loc=Lc;lval=Lx},D)))
    |  typeOfPtn(asFloat(Lc,Dx),E,D,O) is verifyType(Lc,iType("float"),E,D,O,()=>good((pFloat{tipe=E;loc=Lc;fval=Dx},D)))
-   |  typeOfPtn(asDecimal(Lc,Dx),E,D,O) is verifyType(Lc,iType("decimal"),E,D,O,()=>good((pDecimal{tipe=E;loc=Lc;dval=Dx},D)))
-   |  typeOfPtn(asChar(Lc,Cx),E,D,O) is verifyType(Lc,iType("char"),E,D,O,()=>good((pChar{tipe=E;loc=Lc;cval=Cx},D)))
    |  typeOfPtn(asString(Lc,Sx),E,D,O) is verifyType(Lc,iType("string"),E,D,O,()=>good((pString{tipe=E;loc=Lc;sval=Sx},D)))
    |  typeOfPtn(asTuple(Lc,"()",list of [V]),E,D,O) is valof{
         if V matches asTuple(_,"()",A) then -- only unwrap one paren
@@ -475,8 +499,8 @@ check is package{
    |  typeOfArgPtns(P,E,D,O) default is typeOfPtn(P,E,D,O)
 
   private
-  fun typeOfPtnVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{ tipe = Tp} is valof {
-        def varType is freshen(Tp)
+  fun typeOfPtnVar(Nm,Lc,E,D) where findVar(D,Nm) has value varEntry{proto=Proto} is valof {
+        def varType is freshen(Proto.tipe)
 
         switch subsume(D,Lc)(varType,E) in {
           case noGood(M,_) do {
@@ -486,7 +510,7 @@ check is package{
             valis good((pVar{loc=Lc;tipe=E;name=Nm},D))
         }
       }
-   |  typeOfPtnVar(Nm,Lc,E,D) is good((pVar{loc=Lc;tipe=E;name=Nm},defineVar(D,Lc,Nm,E)))
+   |  typeOfPtnVar(Nm,Lc,E,D) is good((pVar{loc=Lc;tipe=E;name=Nm},defineVar(D,Nm,cVar{loc=Lc;name=Nm;tipe=E})))
 
   private
   fun typeOfTuplePtn(Lc,A,E,D,O) is valof{
@@ -609,21 +633,26 @@ check is package{
     installExpPlugin("ref",1, typeOfReference)
     installExpPlugin("!",1, typeOfShriek)
     installExpPlugin("=>",2, typeOfLambda)
-/*    installExpPlugin("<=",2, typeOfPttrn)
     installExpPlugin("memo",1, typeOfMemo)
+    installExpPlugin("from",2, typeOfPttrn)
+/*
     installExpPlugin("do",2, typeOfProc)
     installExpPlugin(".",2, typeOfFieldAccess)
     installExpPlugin("substitute",2, typeOfSubstitute)
-    installExpPlugin("and",2, typeOfCond)
-    installExpPlugin("or",2, typeOfCond)
-    installExpPlugin("not",1, typeOfCond)
-    installExpPlugin("otherwise",2, typeOfCond)
-    installExpPlugin("implies",2, typeOfCond)
+
+    */
+    installExpPlugin("and",2, typeOfCondExp)
+    installExpPlugin("or",2, typeOfCondExp)
+    installExpPlugin("not",1, typeOfCondExp)
+    installExpPlugin("otherwise",2, typeOfCondExp)
+    installExpPlugin("implies",2, typeOfCondExp)
+    /*
     installExpPlugin("switch",1, typeOfCase)
 */
     installExpPlugin("let",1, typeOfLet)
+
+    installExpPlugin("in",2, typeOfCondExp)
 /*
-    installExpPlugin("in",2, typeOfSearchPred)
     installExpPlugin("as",2, typeOfCoerce)
     installExpPlugin("has type",2, typeOfAnnotatedExp)
     installExpPlugin("valof",1, typeOfValof)

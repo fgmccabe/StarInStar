@@ -18,6 +18,7 @@ catalog{
     "fsa" -> "fsa.star";
     "hex" -> "hex.star";
     "lexer" -> "lexer.star";
+    "chars" -> "chars.star";
     "operators" -> "operators.star";
     "opgrammar" -> "opgrammar.star";
     "parsefsa" -> "parsefsa.star";

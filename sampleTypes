@@ -1,3 +1,5 @@
 -- some sample types
 
 for all e,f such that (c of e,(e)=>f) => c of f
+
+all e,f ~ arith[e]  |: (c[e],(e)=>f) => c[f]

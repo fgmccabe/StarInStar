@@ -1,71 +1,80 @@
 ast is package{
   -- Essentially a copy of the standard ast framework.
-  import location
+  public import location
   private import operators
   private import treemap
 
-  type ast is asName(srcLoc,string)
+  public type ast is asName(srcLoc,string)
     or asInteger(srcLoc,integer)
-    or asLong(srcLoc,long)
     or asFloat(srcLoc,float)
-    or asDecimal(srcLoc,decimal)
-    or asChar(srcLoc,char)
     or asString(srcLoc,string)
     or asTuple(srcLoc,string,list of ast)
     or asApply(srcLoc,ast,ast)
 
-  implementation hasLocation over ast is {
-    locOf = astLocOf
-  } using {
-    fun astLocOf(asName(L,_)) is L
-     |  astLocOf(asInteger(L,_)) is L
-     |  astLocOf(asLong(L,_)) is L
-     |  astLocOf(asFloat(L,_)) is L
-     |  astLocOf(asDecimal(L,_)) is L
-     |  astLocOf(asChar(L,_)) is L
-     |  astLocOf(asString(L,_)) is L
-     |  astLocOf(asApply(L,_,_)) is L
-     |  astLocOf(asTuple(L,_,_)) is L
+  public implementation hasLocation over ast is {
+    fun locOf(asName(L,_)) is L
+     |  locOf(asInteger(L,_)) is L
+     |  locOf(asFloat(L,_)) is L
+     |  locOf(asString(L,_)) is L
+     |  locOf(asApply(L,_,_)) is L
+     |  locOf(asTuple(L,_,_)) is L
   }
 
+  isName has type (ast) => option of string
   fun isName(asName(_,Nm)) is some(Nm)
    |  isName(_) default is none
 
+  unary has type (srcLoc,string,ast) => ast
   fun unary(Lc,Op,Arg) is oneApply(Lc,asName(Lc,Op),Arg)
 
+  isUnary has type (srcLoc,string,ast) <= ast
   ptn isUnary(Lc,Nm,E) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [E]))
 
+  oneApply has type (srcLoc,ast,ast) => ast
   fun oneApply(Lc,Op,Arg) is asApply(Lc,Op,asTuple(Lc,"()",list of [Arg]))
 
+  bin has type (srcLoc,string,ast,ast) => ast
   fun bin(Lc,Op,Lhs,Rhs) is binApply(Lc,asName(Lc,Op),Lhs,Rhs)
 
+  binApply has type (srcLoc,ast,ast,ast) => ast
   fun binApply(Lc,Op,Lhs,Rhs) is asApply(Lc,Op,asTuple(Lc,"()",list of [Lhs, Rhs]))
 
+  isBinary has type (srcLoc,string,ast,ast) <= ast
   ptn isBinary(Lc,Nm,L,R) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [L,R]))
 
+  isTernary has type (srcLoc,string,ast,ast,ast) <= ast
   ptn isTernary(Lc,Nm,L,M,R) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [L,M,R]))
 
+  isQuad has type (srcLoc,string,ast,ast,ast,ast) <= ast
   ptn isQuad(Lc,Nm,L,M,M2,R) from asApply(Lc,asName(_,Nm),asTuple(_,"()",list of [L,M,M2,R]))
 
+  nAry has type (srcLoc,string,list of ast)=>ast
   fun nAry(Lc,Op,Args) is asApply(Lc,asName(Lc,Op),asTuple(Lc,"()",Args))
 
+  isApply has type (srcLoc,string,list of ast) <= ast
   ptn isApply(Lc,Op,Args) from asApply(Lc,asName(_,Op),asTuple(_,"()",Args))
 
+  block has type (srcLoc,list of ast) => ast
   fun block(Lc,els) is asTuple(Lc,"{}",els)
 
+  isBLock has type (srcLoc,list of ast) <= ast
   ptn isBlock(Lc,els) from asTuple(Lc,"{}",els)
 
+  tple has type (srcLoc,list of ast) => ast
   fun tple(Lc,els) is asTuple(Lc,"()",els)
 
+  deComma has type (ast) => list of ast
   fun deComma(isBinary(_,",",L,R)) is list of [L,..deComma(R)]
    |  deComma(T) default is list of [T]
 
+  deParen has type (ast) => ast
   fun deParen(asTuple(_,"()",list of [E])) is E
    |  deParen(E) default is E
 
   implementation pPrint over ast is {
     fun ppDisp(T) is showTerm(T,2000)
   } using {
+    showTerm has type (ast,integer) => pP
     fun showTerm(asApply(_,asName(_,Nm),asTuple(_,"()",list of [El])),Priority) is valof{
           if isPrefixOp(Nm,standardOps,Priority) matches some(Spec) then {
             if Spec.priority>Priority then
@@ -99,10 +108,7 @@ ast is package{
         	ppSequence(0,cons of [ppStr("("), ppStr(Nm), ppStr(")")])
      |  showTerm(asName(_,Nm),_) is ppStr(Nm)
      |  showTerm(asInteger(_,Ix),_) is ppStr(Ix as string)
-     |  showTerm(asLong(_,Ix),_) is ppStr(Ix as string)
      |  showTerm(asFloat(_,Fx),_) is ppStr(Fx as string)
-     |  showTerm(asDecimal(_,Dx),_) is ppStr(Dx as string)
-     |  showTerm(asChar(_,Cx),_) is ppSequence(0,cons of [ ppStr("'"), ppStr(Cx as string), ppStr("'")])
      |  showTerm(asString(_,Sx),_) is ppSequence(0,cons of [ ppStr("\""), ppStr(Sx), ppStr("\"")])
      |  showTerm(asTuple(_,Lbl,Els),_) is valof{
           if isBracket(Lbl,standardOps) matches some(BkSpec) then 
@@ -113,6 +119,7 @@ ast is package{
           	valis ppStr("**bad block**")
         }
 
+    showEls has type (list of ast,integer) => cons of pP
     fun showEls(list of [],_) is cons of []
      |  showEls(list of [H,..T],Pr) is cons of [showTerm(H,Pr),.. showEls(T,Pr)]
   }

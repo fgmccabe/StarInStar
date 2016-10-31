@@ -78,10 +78,7 @@ opgrammar is package{
 
   fun term0(Toks,Ops) where nxtTok(Toks,Ops) matches (Hed,Rest) is switch Hed in {
     case integerTok(Ix,Lc) is (Rest,0,asInteger(Lc,Ix))
-    case longTok(Ix,Lc) is (Rest,0,asLong(Lc,Ix))
     case floatTok(Dx,Lc) is (Rest,0,asFloat(Lc,Dx))
-    case decimalTok(Dx,Lc) is (Rest,0,asDecimal(Lc,Dx))
-    case charTok(Ch,Lc) is (Rest,0,asChar(Lc,Ch))
     case stringTok(Str,Lc) is collectStringTokens(Str,Lc,Rest,Ops)
     case interpolatedString(Els,Lc) is (Rest,0,parseInterpolation(Els,Lc,Ops))
     case regexpTok(Str,Lc) is (Rest,0,unary(Lc,"*regexp*",asString(Lc,Str)))
@@ -382,7 +379,7 @@ opgrammar is package{
                   (TToks,asTuple(mergeLocation(stLc,tlLc),Bkt.op,list of [Els..,T]),tlLc);
             case (idTok(",",_),TToks) do valis parseBkt(TToks,list of [Els..,T]);
             case (HdTk,TToks) default do {
-              reportError("expecting a ',' or '$Rgt', not $HdTk, '(' at $stLc",list of [locOf(HdTk)])
+              reportError("expecting a comma or '$Rgt', not $HdTk, ( at $stLc",list of [locOf(HdTk)])
               valis parseBkt(TToks,list of [Els..,T])
             }
           }

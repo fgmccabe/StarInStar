@@ -6,15 +6,14 @@ stdTypes is package{
   private import good
   private import location
 
+  def booleanType is iType("boolean")
+
   def stdDict is valof {
     var D := dict{
       names = dictionary of []
       types = dictionary of [
         "integer" -> typeIs{loc=missing;tipe=iType("integer")},
-        "long" -> typeIs{loc=missing;tipe=iType("long")},
         "float" -> typeIs{loc=missing;tipe=iType("float")},
-        "decimal" -> typeIs{loc=missing;tipe=iType("decimal")},
-        "char" -> typeIs{loc=missing;tipe=iType("char")},
         "string" -> typeIs{loc=missing;tipe=iType("string")}
       ]
       contracts = dictionary of []
@@ -38,11 +37,14 @@ stdTypes is package{
   fun stdType(S,D) is valof parseAlgebraicType(parseString(S),D)
 
   private
-  fun stdContract(S,D) is valof introduceContract(parseString(S),D)
+  fun stdContract(S,D) is valof{
+    def (Nm,entry) is valof parseContract(parseString(S),D)
+    valis declareContract(D,Nm,entry)
+  }
 
   private
   fun stdFun(Nm,S,D) is valof {
     def Tp is valof parseType(parseString(S),D)
-    valis defineVar(D,missing,Nm,Tp)
+    valis defineVar(D,Nm,cVar{loc=missing;name=Nm;tipe=Tp})
   }
 }

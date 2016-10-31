@@ -106,11 +106,11 @@ freshen is package{
       	valis Mp[with Nm->iTpExp(iKvar(nextId(),Nm),iTuple(UVars))]
     }
 
-  fun freshenForUse(Tp) is frshn(Tp,dictionary of [],nVar,skolemize)
-  fun freshenForEvidence(Tp) is frshn(Tp,dictionary of [],skolemize,nVar)
+  fun freshenForUse(Tp,Q) is frshn(Tp,Q,nVar,skolemize)
+  fun freshenForEvidence(Tp,Q) is frshn(Tp,Q,skolemize,nVar)
 
-  fun freshen(Tp) where freshenForUse(Tp) matches (fTp,_) is fTp
-  fun evidence(Tp) where freshenForEvidence(Tp) matches (fTp,_) is fTp
+  fun freshen(Tp) where freshenForUse(Tp,dictionary of []) matches (fTp,_) is fTp
+  fun evidence(Tp) where freshenForEvidence(Tp,dictionary of []) matches (fTp,_) is fTp
 
   fun stripQuants(iExists(bV,bT),M,U,E) is stripQuants(bT,E(bV,M),U,E)
    |  stripQuants(iUniv(bV,bT),M,U,E) is stripQuants(bT,U(bV,M),U,E)
@@ -168,8 +168,90 @@ freshen is package{
 
     fun bindCon(Cn,T) is iConstrained(T,genConstraint(Cn))
 
-  } in valof{
-      def gTp is genType(tipe)
-      valis rightFold(bindTp,rightFold(bindCon,gTp,constraints),foundVars)
+    def gnTp is genType(tipe)
+  } in rightFold(bindTp,rightFold(bindCon,gnTp,constraints),foundVars)
+
+
+  fun freeze(tipe,Occurs) is let {
+    var foundVars := dictionary of []
+    var constraints := set of []
+
+    prc walkType(Tp) do 
+      switch deRef(Tp) in {
+        case iTvar{} do freezeVar(deRef(Tp))
+        case iKvar(_,_) do nothing
+        case iBvar(Nm) do nothing
+        case iType(_) do nothing
+        case iFace(Flds,Tps) do {
+          for _->T in Flds do
+            walkType(T);
+          for _->T in Tps do
+            walkType(T)
+        }
+        case iTuple(Flds) do {
+          for T in Flds do
+            walkType(T)
+        }
+        case iFnTp(A,R) do {
+          walkType(A);
+          walkType(R);
+        }
+        case iConTp(A,R) do {
+          walkType(A);
+          walkType(R);
+        }
+        case iPtTp(A,R) do {
+          walkType(A);
+          walkType(R);
+        }
+        case iRfTp(T) do {
+          walkType(T);
+        }
+        case iTpExp(T,A) do {
+          walkType(A);
+          walkType(T);
+        }
+        case iUniv(Nm,bTp) do walkType(bTp)
+        case iExists(Nm,bTp) do walkType(bTp)
+        case iConstrained(A,X) do {
+          walkType(A)
+          walkConstraint(X)
+        }
+        case iContract(Nm,A,D) do{
+          for T in A do
+            walkType(T)
+          for T in D do
+            walkType(T)
+        }
+        case unTyped do nothing  
+      }
+
+    prc freezeVar(Tp matching iTvar{id=i;name=name;constraints=c}) do {
+      if foundVars[Tp] has value gTp then
+        nothing
+      else {
+        def boundVar is iBvar(name)
+        foundVars[Tp] := boundVar
+        for con in c do {
+          extend constraints with con
+        }
+        Tp.value := boundVar -- the actual freeze
+      }
     }
+
+    prc walkConstraint(isOver(Con)) do walkType(Con)
+     |  walkConstraint(hasField(Tp,Name,fldTp)) do { walkType(Tp); walkType(fldTp)}
+     |  walkConstraint(iFieldKind(Tp,N,K)) do walkType(Tp)
+     |  walkConstraint(iTypeCon(Tp,N,fldTp)) do { walkType(Tp); walkType(fldTp); }
+     |  walkConstraint(hasKind(Tp,K)) do walkType(Tp)
+     |  walkConstraint(instanceOf(Tp,iTp)) do { walkType(Tp); walkType(iTp); }
+     |  walkConstraint(isTuple(Tp)) do walkType(Tp)
+
+    fun bindTp((_,iBvar(nm)),tp) is iUniv(nm,tp)
+
+    fun bindCon(Cn,T) is iConstrained(T,Cn)
+
+    { walkType(tipe) }
+
+  } in rightFold(bindTp,rightFold(bindCon,tipe,constraints),foundVars)
 }

@@ -35,22 +35,22 @@ subsume is package{
           both(subList(A1,A2,sub),()=>subList(D1,D2,sub)) :
           noGood("arity of $t1 different to arity of $t2",Lc)
       case (iUniv(_,_),_) is valof{
-      	def (f1,_) is freshenForUse(v1)
+      	def (f1,_) is freshenForUse(v1,dictionary of [])
       	valis sub(f1,deRef(f1),t2,v2)
       };
       case (_,iUniv(_,_)) is valof{
-      	def (f2,_) is freshenForEvidence(v2)
+      	def (f2,_) is freshenForEvidence(v2,dictionary of [])
       	valis sub(t1,v1,f2,deRef(f2))
       };
       case (iExists(_,_),_) is valof{
-      	def (e1,_) is freshenForUse(v1)
+      	def (e1,_) is freshenForUse(v1,dictionary of [])
       	def mark is size(resets)
       	def Rslt is sub(e1,deRef(e1),t2,v2)
       	resetToMark(mark)
       	valis Rslt
       };
       case (_,iExists(_,_)) is valof{
-      	def (e2,_) is freshenForEvidence(v2)
+      	def (e2,_) is freshenForEvidence(v2,dictionary of [])
       	def mark is size(resets)
       	def Rslt is sub(t1,v1,e2,deRef(e2))
       	resetToMark(mark)

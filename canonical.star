@@ -3,6 +3,7 @@ canonical is package{
   private import operators
   private import freshen
   private import access
+  private import (trace)
   import types
 
   -- define the typed term structure. This is the main workhorse structure for representing Star programs
@@ -29,7 +30,7 @@ canonical is package{
                  or canonAlgegraic(srcLoc,accessMode,iType,dictionary of (string,iType))
                  or canonAlias(srcLoc,accessMode,iType,iType)
                  or canonExists(srcLoc,accessMode,iType,iType)
-                 or canonContract(srcLoc,accessMode,string,iType,iType)
+                 or canonContract(srcLoc,accessMode,string,iType,iType,dictionary of (string,iType))
                  or canonImplementation(srcLoc,accessMode,iType,cExp)
 
                  -- or canonAction(srcLoc,cAction)
@@ -38,7 +39,7 @@ canonical is package{
     fun locOf(canonDef(Lc,_,_,_)) is Lc
      |  locOf(canonVar(Lc,_,_,_)) is Lc
      |  locOf(canonAlgegraic(Lc,_,_,_)) is Lc
-     |  locOf(canonContract(Lc,_,_,_,_)) is Lc
+     |  locOf(canonContract(Lc,_,_,_,_,_)) is Lc
      |  locOf(canonImplementation(Lc,_,_,_)) is Lc
   }
 
@@ -68,7 +69,7 @@ canonical is package{
     case canonDef(_,A,Vr,Vl) is ppSequence(0,[ppDisp(A),ppStr("def"),ppSpace,showPtn(Vr,1199),ppStr(":"),ppDisp(Vr.tipe),ppSpace,ppStr("is"),ppSpace,showExp(Vl,1199)])
     case canonVar(_,A,Vr,Vl) is ppSequence(0,[ppDisp(A),ppStr("var"),ppSpace,showPtn(Vr,1199),ppStr(":"),ppDisp(Vr.tipe),ppSpace,ppStr(":="),ppSpace,showExp(Vl,1199)])
     case canonAlgegraic(_,A,Tp,Cns) is ppSequence(0,[ppDisp(A),ppStr("type"),ppSpace,ppDisp(Tp),ppSpace,ppStr("is"),ppSpace,..showAlgebraicDef(Cns)])
-    case canonContract(_,A,Nm,Tp,Sp) is ppSequence(0,[ppDisp(A),ppStr("contract"),ppSpace,ppDisp(Tp),ppSpace,ppStr("is"),ppSpace,ppDisp(Sp)])
+    case canonContract(_,A,Nm,Tp,Sp,_) is ppSequence(0,[ppDisp(A),ppStr("contract"),ppSpace,ppDisp(Tp),ppSpace,ppStr("is"),ppSpace,ppDisp(Sp)])
     case canonImplementation(_,A,CTp,Sp) is ppSequence(0,[ppDisp(A),ppStr("implementation"),ppSpace,ppDisp(CTp),ppSpace,ppStr("is"),ppDisp(Sp)])
   }
 
@@ -81,12 +82,10 @@ canonical is package{
   -- Canonical expression term
   type cExp is 
        cVar{loc has type srcLoc; tipe has type iType; name has type string}   -- a variable of some form
+    or cMethod{loc has type srcLoc; tipe has type iType; con has type iType;name has type string}   -- a method in a contract
     or cDeRef{loc has type srcLoc; tipe has type iType; deref has type cExp}  -- dereference a variable
     or cInt{loc has type srcLoc; tipe has type iType; ival has type integer}
-    or cLong{loc has type srcLoc; tipe has type iType; lval has type long}
     or cFloat{loc has type srcLoc; tipe has type iType; fval has type float}
-    or cDecimal{loc has type srcLoc; tipe has type iType; dval has type decimal}
-    or cChar{loc has type srcLoc; tipe has type iType; cval has type char}
     or cString{loc has type srcLoc; tipe has type iType; sval has type string}
     or cTuple{loc has type srcLoc; tipe has type iType; elements has type list of cExp}
     or cFace{loc has type srcLoc; tipe has type iType; values has type dictionary of (string,cExp);types has type dictionary of (string,iType)}
@@ -95,7 +94,9 @@ canonical is package{
     or cSwitch{loc has type srcLoc; tipe has type iType; sel has type cExp; cases has type list of ((cPtn,boolean,cExp))}
     or cLet{loc has type srcLoc;tipe has type iType;env has type dict;stmts has type list of canonStmt;bnd has type cExp}
     or cLambda{loc has type srcLoc; tipe has type iType; lhs has type cPtn; rhs has type cExp}
+    or cPttrn{loc has type srcLoc; tipe has type iType; value has type cExp; ptrn has type cPtn}
     or cMemo{loc has type srcLoc; tipe has type iType; value has type cExp}
+    or cIsTrue{loc has type srcLoc; tipe has type iType; cond has type cCond}
 
   implementation pPrint over cExp is {
     ppDisp = shw
@@ -106,12 +107,10 @@ canonical is package{
   private
   fun showExp(E,Pr) is switch E in {
     case cVar{name=Nm} is ppStr(Nm)
+    case cMethod{name=Nm} is ppSequence(0,[ppStr(Nm),ppStr("©")])
     case cDeRef{deref=C} is parenthesize(ppSequence(0,[ppStr("!"),showExp(C,149)]),Pr>=150)
     case cInt{ival=Ix} is ppStr(Ix as string)
-    case cLong{lval=Lx} is ppStr(Lx as string)
     case cFloat{fval=Dx} is ppStr(Dx as string)
-    case cDecimal{dval=Dx} is ppStr(Dx as string)
-    case cChar{cval=Cx} is ppSequence(0,cons of [ ppStr("'"), ppStr(Cx as string), ppStr("'")])
     case cString{sval=Sx} is ppSequence(0,cons of [ ppStr("\""), ppStr(Sx), ppStr("\"")])
     case cTuple{elements=Tpl} is ppSequence(0,[ppStr("("),
                                       ppSequence(0,interleave(cons of { all showExp(El,999) where El in Tpl},ppStr(", "))),
@@ -128,6 +127,8 @@ canonical is package{
     case cApply{op=Op;arg=Args} is ppSequence(0,[showExp(Op,0),parenthesize(showExp(Args,0),Args matches cTuple{})])
     case cLambda{lhs=Args;rhs=Exp} is parenthesize(ppSequence(0,[
             showPtn(Args,909),ppSpace,ppStr("=>"),ppSpace,showExp(Exp,910)]),Pr>=910)
+    case cPttrn{value=Exp;ptrn=Ptn} is parenthesize(ppSequence(0,[
+            showExp(Exp,910),ppSpace,ppStr("from"),ppSpace,showPtn(Ptn,909)]),Pr>=910)
     case cMemo{value=Exp} is parenthesize(ppSequence(0,[ppStr("memo"),ppSpace,showExp(Exp,998)]),Pr>=999)
     case cLet{stmts=Stmts;bnd=B} is parenthesize(ppSequence(0,[
             ppStr("let"),ppSpace,ppStr("{"),ppNl,ppSequence(2,showCanonSeq(Stmts,showStmt)),ppNl,ppStr("}"),
@@ -135,6 +136,7 @@ canonical is package{
     case cSwitch{cases=Cs;sel=S} is parenthesize(ppSequence(0,[
           ppStr("switch"),ppSpace,showExp(S,907),ppSpace,ppStr("in"),ppSpace,ppStr("{"),ppNl,
                 ppSequence(2,showCases(Cs,showExpCase)),ppNl,ppStr("}")]),Pr>=908)
+    case cIsTrue{cond=C} is ppDisp(C)
     case _ default is ppStr(__display(E))
   }
 
@@ -157,10 +159,7 @@ canonical is package{
   type cPtn is 
        pVar{loc has type srcLoc; tipe has type iType; name has type string} -- a new variable
     or pInt{loc has type srcLoc; tipe has type iType; ival has type integer}
-    or pLong{loc has type srcLoc; tipe has type iType; lval has type long}
     or pFloat{loc has type srcLoc; tipe has type iType; fval has type float}
-    or pDecimal{loc has type srcLoc; tipe has type iType; dval has type decimal}
-    or pChar{loc has type srcLoc; tipe has type iType; cval has type char}
     or pString{loc has type srcLoc; tipe has type iType; sval has type string}
     or pExp{loc has type srcLoc; tipe has type iType; val has type cExp}
     or pTuple{loc has type srcLoc; tipe has type iType; elements has type list of cPtn}
@@ -181,10 +180,7 @@ canonical is package{
   fun showPtn(P,Pr) is switch P in {
     case pVar{name=Nm} is ppStr(Nm)
     case pInt{ival=Ix} is ppStr(Ix as string)
-    case pLong{lval=Lx} is ppStr(Lx as string)
     case pFloat{fval=Dx} is ppStr(Dx as string)
-    case pDecimal{dval=Dx} is ppStr(Dx as string)
-    case pChar{cval=Cx} is ppSequence(0,cons of [ ppStr("'"), ppStr(Cx as string), ppStr("'")])
     case pString{sval=Sx} is ppSequence(0,cons of [ ppStr("\""), ppStr(Sx), ppStr("\"")])
     case pExp{val=Ex} is ppDisp(Ex)
     case pTuple{elements=Tpl} is ppSequence(0,[ppStr("("),
@@ -233,6 +229,10 @@ canonical is package{
     ppDisp = shw
   } using {
     fun shw(E) is ppSequence(0,[showCond(E,2000),ppStr("@"),ppDisp(E.loc)])
+  }
+
+  implementation hasLocation over cCond is {
+    fun locOf(E) is E.loc
   }
 
   implementation isExported over cCond is {
@@ -300,11 +300,11 @@ canonical is package{
 
   type varEntry is varEntry{
     loc has type srcLoc
-    tipe has type iType
+    proto has type cExp
   }
 
-  fun showVarEntry(Nm,varEntry{tipe=Tp}) is 
-      ppSequence(0,[ppStr(Nm),ppSpace,ppStr("has type"),showType(Tp,1999),ppNl])
+  fun showVarEntry(Nm,varEntry{proto=Proto}) is 
+      ppSequence(0,[ppStr(Nm),ppSpace,ppStr("has type"),showType(Proto.tipe,1999),ppNl])
 
   implementation hasLocation over varEntry is {
     fun locOf(E) is E.loc
@@ -314,6 +314,7 @@ canonical is package{
     loc has type srcLoc
     tipe has type iType
     spec has type iType
+    methods has type dictionary of (string,iType)
   }
 
   fun showContractEntry(Nm,contractEntry{tipe=Tp;spec=Spec},D) is
@@ -348,6 +349,10 @@ canonical is package{
     outer has type option of dict
   }
 
+ implementation pPrint over dict is {
+    fun ppDisp(D) is showDict(D,true)
+  } 
+
   fun stackDict(D) is dict{
     names=dictionary of [];
     types = dictionary of [];
@@ -370,12 +375,19 @@ canonical is package{
   fun declareVar(Dict,Nm,Ve) is Dict substitute { names = Dict.names[with Nm->Ve]}
   fun declareType(Dict,Nm,Te) is Dict substitute { types = Dict.types[with Nm->Te]}
 
-  fun declareContract(Dict,Lc,Nm,Tp,Spec) is valof {
-    var D := Dict substitute { contracts = Dict.contracts[with Nm->contractEntry{loc=Lc;tipe=Tp;spec=Spec}]}
-    if Spec matches iFace(Fields,Types) then {
-      for K->T in Fields do 
-        D := defineVar(D,Lc,K,T)
-    }
+  fun freshVar(Lc,cVar{tipe=Tp;name=Nm}) is cVar{loc=Lc;tipe=freshen(Tp);name=Nm}
+   |  freshVar(Lc,cMethod{tipe=Tp;name=Nm;con=Con}) is valof{
+        def (mT,mQ) is freshenForUse(Tp,dictionary of [])
+        def (mC,_) is freshenForUse(Con,mQ) -- this is a hack to ensure we actually have the right contract
+        valis cMethod{loc=Lc;name=Nm;tipe=mT;con=mC}
+      }
+
+  fun declareContract(Dict,Nm,E) is valof {
+    var D := Dict substitute { contracts = Dict.contracts[with Nm->E]}
+      for K->T in E.methods do {
+        def (conTipe,_) is stripQuants(E.tipe,(),(_,St)=>St,(_,St)=>St)
+        D := defineVar(D,K,cMethod{loc=E.loc;name=K;tipe=T;con=conTipe})
+      }
     valis D
   }
 
@@ -384,28 +396,29 @@ canonical is package{
 
   fun showDict(D,deep) is let{
     fun showTypes() is 
-      ppSequence(0,cons of {all showTypeEntry(Nm,Tp,D) where Nm->Tp in D.types})
+      ppSequence(2,cons of {all showTypeEntry(Nm,Tp,D) where Nm->Tp in D.types})
     fun showContracts() is
-      ppSequence(0,cons of {all showContractEntry(Nm,C,D) where Nm->C in D.contracts})
+      ppSequence(2,cons of {all showContractEntry(Nm,C,D) where Nm->C in D.contracts})
     fun showNames() is 
-      ppSequence(0,cons of {all showVarEntry(Nm,C) where Nm->C in D.names})
+      ppSequence(2,cons of {all showVarEntry(Nm,C) where Nm->C in D.names})
     fun showImplementations() is
-      ppSequence(0,cons of {all showImplementation(I) where I in D.implementations})
+      ppSequence(2,cons of {all showImplementation(I) where I in D.implementations})
+    def showOuter is deep and D.outer has value Outer ? showDict(Outer,deep) : ppStr("")
   } in 
-    ppSequence(0,cons of [showTypes(),showContracts(),showImplementations(),showNames()])
+    ppSequence(0,cons of [showTypes(),showContracts(),showImplementations(),showNames(),showOuter])
 
-  defineVar has type (dict,srcLoc,string,iType) => dict
-  fun defineVar(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Lc;tipe=Tp}]}
+  defineVar has type (dict,string,cExp) => dict
+  fun defineVar(Dict,Nm,Proto) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Proto.loc;proto=Proto}]}
 
   defineConstructor has type (dict,srcLoc,string,iType) => dict
-  fun defineConstructor(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Lc;tipe=Tp}]}
+  fun defineConstructor(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Lc;proto=cVar{loc=Lc;tipe=Tp;name=Nm}}]}
 
   introduceType has type (dict,srcLoc,string,iType)=>dict
   fun introduceType(Dict,Lc,Nm,Tp) is declareType(Dict,Nm,typeIs{loc=Lc;tipe=Tp})
 
   fun typeOfField(Dict,algebraicEntry{constructors=Cons},Nm) is valof{
-    for C in Cons and findVar(Dict,C) has value varEntry{tipe=Con} do {
-      if preCheck(Con,Nm) and findFieldInCon(freshen(Con),Nm) has value Tp then {
+    for C in Cons and findVar(Dict,C) has value varEntry{proto=Proto} do {
+      if preCheck(Proto.tipe,Nm) and findFieldInCon(freshen(Proto.tipe),Nm) has value Tp then {
         valis some(Tp)
       }
     }
@@ -416,7 +429,7 @@ canonical is package{
   fun declareAlgebraic(Dict,Lc,Nm,Tp,Cons) is valof{
     var D := declareType(Dict,Nm,algebraicEntry{loc=Lc;tipe=Tp;constructors=list of { all Ky where  Ky->_ in Cons}})
     for Ky->ConTp in Cons do
-      D := declareVar(D,Ky,varEntry{loc=Lc;tipe=ConTp})
+      D := defineConstructor(D,Lc,Ky,ConTp)
     valis D
   }
 
@@ -436,7 +449,7 @@ canonical is package{
 
   private fun occCheck(iTvar{id=i;name=name;constraints=c},D) is let{
       fun check(dict{types=Tps}) where typeIs{tipe=Tp} in Tps and occursIn(i,Tp) is some(true)
-       |  check(dict{names=Vrs}) where varEntry{tipe=Tp} in Vrs and occursIn(i,Tp) is some(true)
+       |  check(dict{names=Vrs}) where varEntry{proto=Proto} in Vrs and occursIn(i,Proto.tipe) is some(true)
        |  check(_) default is none
   } in (findInDict(D,check) has value X ? X : false)
 

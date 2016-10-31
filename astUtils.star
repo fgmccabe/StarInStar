@@ -36,6 +36,8 @@ astUtils is package{
 
   ptn isMemoDef(Lc,Lhs,Rhs) from isDefDef(Lc,Eqn) where Eqn matches isEquation(_,Lhs,isMemoAst(_,Rhs))
 
+  ptn isPttrnAst(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"from"),asTuple(_,_,list of [Lhs,Rhs]))
+
   ptn isPtnDef(Lc,Eqns) from asApply(Lc,asName(_,"ptn"),asTuple(_,_,list of [Eqns]))
 
   ptn isPttrnRule(Lc,Lhs,Rhs) from asApply(Lc,asName(_,"from"),asTuple(_,_,list of [Lhs,Rhs]))

@@ -1,6 +1,7 @@
 operators is package{
   private import trie
   import stdNames
+  private import chars
 
   type operatorStyle is prefixOp or infixOp or postfixOp
 
@@ -345,7 +346,7 @@ operators is package{
 
     opTable := defineBktPair("(",")","()",",",1200,opTable)
     opTable := defineBktPair("{","}","{}",";",2000,opTable)
-    opTable := defineBktPair("[","]","[]","",1000,opTable)
+    opTable := defineBktPair("[","]","[]","",2000,opTable)
     opTable := defineBktPair("\#(",")\#","","",2000,opTable)
     opTable := defineBktPair("\#<",">\#","\#<>","",2000,opTable)
     opTable := defineBktPair("<|","|>","quote","",2000,opTable)

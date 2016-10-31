@@ -14,7 +14,7 @@ redblacktest is package{
 
     assert _index(SS,"aleph")=none;
 
-    def XX is redblack of ['S'->0, 'E'->1, 'A'->2, 'R'->3, 'C'->4, 'H'->5, 'X'->6, 'M'->7, 'P'->8, 'L'->9 ];
+    def XX is redblack of [0cS->0, 0cE->1, 0cA->2, 0cR->3, 0cC->4, 0cH->5, 0cX->6, 0cM->7, 0cP->8, 0cL->9 ];
     logMsg(info,__display(XX));
   }
 }

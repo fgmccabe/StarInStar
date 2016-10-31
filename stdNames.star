@@ -3,7 +3,7 @@ stdNames is package{
   -- define the standard graphic identifiers
   type tokGraph is tokGraph{
     isFinal has type boolean
-    dict has type dictionary of (char,tokGraph)
+    dict has type dictionary of (integer,tokGraph)
   }
 
   prc addStdGrph("") do nothing
@@ -30,13 +30,13 @@ stdNames is package{
   isTermGraph has type (tokGraph)=>boolean
   fun isTermGraph(M) is M.isFinal
   
-  isTermChar has type (char,tokGraph)=>boolean
+  isTermChar has type (integer,tokGraph)=>boolean
   fun isTermChar(Ch,M) is M.isFinal
   
-  nextCharMap has type (char,tokGraph)=>tokGraph
+  nextCharMap has type (integer,tokGraph)=>tokGraph
   fun nextCharMap(Ch,M) where M.dict[Ch] has value nxt is nxt
   
-  isValidNextChar has type (char,tokGraph)=>boolean
+  isValidNextChar has type (integer,tokGraph)=>boolean
   fun isValidNextChar(Ch,M) is present M.dict[Ch]
   
   prc showStdGraph() do {
