@@ -6,6 +6,7 @@ worksheet{
   import canonical
   import types
   import good
+  import stdTypes
 
 	/*
 	def factTerm is parseFile("file:fact.star")
@@ -20,11 +21,11 @@ worksheet{
 
   -- type check function application
 
-  def pT is parseType(parseString("(integer,integer)=>integer"),stdDict)
+  def good(pT) is parseType(parseString("(integer,integer)=>integer"),stdDict)
 
-  var D := declareVar(stdDict,"plus",varEntry{tipe=pT})
-  D := declareVar(D,"minus",varEntry{tipe=pT})
-  D := declareVar(D,"times",varEntry{tipe=pT})
+  var D := declareVar(stdDict,"plus",varEntry{proto=cVar{loc=missing;name="plus";tipe=pT}})
+  D := declareVar(D,"minus",varEntry{proto=cVar{loc=missing;name="minus";tipe=pT}})
+  D := declareVar(D,"times",varEntry{proto=cVar{loc=missing;name="times";tipe=pT}})
 
   def e is parseString("plus(times(2,3),4)")
 

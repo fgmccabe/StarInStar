@@ -299,7 +299,6 @@ canonical is package{
       ppSequence(0,[ppStr("type"),ppSpace,ppDisp(Tp),ppSpace,ppStr("is"),ppSpace,ppDisp(C),ppNl])
 
   type varEntry is varEntry{
-    loc has type srcLoc
     proto has type cExp
   }
 
@@ -307,7 +306,7 @@ canonical is package{
       ppSequence(0,[ppStr(Nm),ppSpace,ppStr("has type"),showType(Proto.tipe,1999),ppNl])
 
   implementation hasLocation over varEntry is {
-    fun locOf(E) is E.loc
+    fun locOf(E) is E.proto.loc
   }
 
   type contractEntry is contractEntry{
@@ -408,10 +407,10 @@ canonical is package{
     ppSequence(0,cons of [showTypes(),showContracts(),showImplementations(),showNames(),showOuter])
 
   defineVar has type (dict,string,cExp) => dict
-  fun defineVar(Dict,Nm,Proto) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Proto.loc;proto=Proto}]}
+  fun defineVar(Dict,Nm,Proto) is Dict substitute {names = Dict.names[with Nm->varEntry{proto=Proto}]}
 
   defineConstructor has type (dict,srcLoc,string,iType) => dict
-  fun defineConstructor(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{loc=Lc;proto=cVar{loc=Lc;tipe=Tp;name=Nm}}]}
+  fun defineConstructor(Dict,Lc,Nm,Tp) is Dict substitute {names = Dict.names[with Nm->varEntry{proto=cVar{loc=Lc;tipe=Tp;name=Nm}}]}
 
   introduceType has type (dict,srcLoc,string,iType)=>dict
   fun introduceType(Dict,Lc,Nm,Tp) is declareType(Dict,Nm,typeIs{loc=Lc;tipe=Tp})

@@ -12,9 +12,9 @@ worksheet{
 
   show idType;
 
-  show freshenForUse(idType);
+  show freshen(idType);
 
-  show freshenForEvidence(idType);
+  show evidence(idType);
 
   def lType is iTpExp(iType("list"),iType("string"))
 
@@ -28,8 +28,8 @@ worksheet{
     	  iTpExp(iType("list"),iBvar("t")))));
 
   show mpType;
-  show freshenForUse(mpType);
-  show freshenForEvidence(mpType);
+  show freshen(mpType);
+  show evidence(mpType);
 
   -- record types
   def rcType is iUniv("s",iExists("t",
@@ -47,8 +47,8 @@ worksheet{
       hasKind(iBvar("t"),kType))))
 
   show rcType;
-  show freshenForUse(rcType);
-  show freshenForEvidence(rcType);
+  show freshen(rcType);
+  show evidence(rcType);
 }
 
   
