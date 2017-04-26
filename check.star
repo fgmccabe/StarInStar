@@ -40,7 +40,7 @@ check is package{
       	V matches asTuple(_,"()",A) ? typeOfTuple(Lc,A,E,D,O) : typeOfExp(V,E,D,O)
    |  typeOfExp(asTuple(Lc,"()",A),E,D,O) is typeOfTuple(Lc,A,E,D,O)
    |  typeOfExp(asTuple(Lc,"{}",A),E,D,O) is typeOfRecord(Lc,A,E,D,O)
---   |  typeOfExp(asTuple(Lc,"[]",A),E,D,O) is typeOfSequence(Lc,A,E,D,O)
+   |  typeOfExp(asTuple(Lc,"[]",A),E,D,O) is typeOfSequence(Lc,A,E,D,O)
    |  typeOfExp(T matching isApply(Lc,Nm,A),E,D,O) where expPlugins[(Nm,size(A))] has value plugin is plugin(T,E,D,O)
    |  typeOfExp(T matching asApply(Lc,F,A),E,D,O) is valof{
       	def argType is typeVar()
